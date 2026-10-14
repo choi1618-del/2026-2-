@@ -5,16 +5,22 @@ on:
     - cron: '30 7 * * 1-5' # KST 16:30 (월~금)
   workflow_dispatch:
 
+# 💡 [핵심 수정] 128 에러 해결: 가상 봇에게 파일을 저장(쓰기)할 수 있는 권한을 명시적으로 부여합니다.
+permissions:
+  contents: write
+
 jobs:
   collect-data:
     runs-on: ubuntu-latest
     
     steps:
+      # 💡 [경고 해결] Node.js 관련 경고를 없애기 위해 버전을 v3 -> v4로 올렸습니다.
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
+      # 💡 [경고 해결] 파이썬 설정 버전도 v4 -> v5로 올렸습니다.
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -27,17 +33,16 @@ jobs:
         env:
           NAVER_ID: ${{ secrets.NAVER_ID }}
           NAVER_PW: ${{ secrets.NAVER_PW }}
-        # 업로드하신 파이썬 파일명으로 실행합니다.
         run: python "크롤링 찐최종.py"
 
       - name: Commit and Push results
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          # 아래 줄에 -f 를 추가합니다.
           git add -f *.csv
           git commit -m "자동 수집: 손해보험 주가 데이터 업데이트" || exit 0
           git push
+
       - name: Notify on failure
         if: failure()
         run: echo "크롤링 에러 발생! Actions 로그를 확인하세요."
