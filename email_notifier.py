@@ -6,24 +6,23 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
-
 class NaverMailNotifier:
 
     def __init__(self):
-        # 최신 .env 파일 내용 강제 로드
+        # 로컬 테스트용 .env 로드 (깃허브 환경에서는 에러 없이 자연스럽게 무시됩니다)
         load_dotenv(override=True)
 
         self.smtp_server = 'smtp.naver.com'
         self.smtp_port = 587
 
-        # 환경변수 읽기
-        raw_user = os.getenv('NAVER_USER', '').strip()
-        self.naver_pw = os.getenv('NAVER_PASSWORD', '').strip()
+        # 💡 [핵심 수정] 깃허브 Secrets에 등록한 이름과 똑같이 맞춰줍니다.
+        raw_user = os.getenv('NAVER_ID', '').strip()
+        self.naver_pw = os.getenv('NAVER_PW', '').strip()
 
-        # 로그인 시 사용할 Pure ID (cgy20495)
+        # 로그인 시 사용할 Pure ID
         self.login_id = raw_user.split('@')[0] if raw_user else ''
 
-        # 송신/수신 이메일 주소 (cgy20495@naver.com)
+        # 송신/수신 이메일 주소
         self.sender_email = (
             f'{self.login_id}@naver.com' if self.login_id else ''
         )
@@ -57,8 +56,9 @@ class NaverMailNotifier:
 
     def send_report(self, report):
         if not self.login_id or not self.naver_pw:
+            # 💡 [수정됨] 에러 메시지를 더 명확하게 변경했습니다.
             print(
-                '❌ 메일 전송 실패: .env 파일에서 계정 정보를 찾을 수 없습니다.'
+                '❌ 메일 전송 실패: 환경변수(Secrets)에서 NAVER_ID 또는 NAVER_PW를 찾을 수 없습니다.'
             )
             return
 
@@ -85,7 +85,7 @@ class NaverMailNotifier:
             # 네이버 SMTP 접속 및 발송
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
                 server.starttls()
-                server.login(self.login_id, self.naver_pw)  # 정확한 순수 아이디로 로그인
+                server.login(self.login_id, self.naver_pw)
                 server.sendmail(
                     self.sender_email, self.receiver_email, msg.as_string()
                 )
