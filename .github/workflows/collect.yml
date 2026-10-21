@@ -5,7 +5,6 @@ on:
     - cron: '30 7 * * 1-5' # KST 16:30 (월~금)
   workflow_dispatch:
 
-# 💡 [128 에러 해결] 봇에게 파일을 저장(쓰기)할 수 있는 권한 부여
 permissions:
   contents: write
 
@@ -13,16 +12,13 @@ jobs:
   collect-data:
     runs-on: ubuntu-latest
     
-    # 💡 [시간 오류 해결] 가상 컴퓨터의 시간을 한국 시간(KST)으로 고정
     env:
       TZ: Asia/Seoul
     
     steps:
-      # 💡 [버전 경고 해결] Checkout v4 사용
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 💡 [버전 경고 해결] Python Setup v5 사용
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -49,5 +45,4 @@ jobs:
 
       - name: Notify on failure
         if: failure()
-        run: echo "크롤링 에러 발생! Actions 로그를 확인하세요."
         run: echo "크롤링 에러 발생! Actions 로그를 확인하세요."
