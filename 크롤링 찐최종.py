@@ -29,6 +29,7 @@ STOCK_INFO = {
 }
 
 def clean_numeric(val):
+    """문자열 형태의 수치를 숫자(int, float) 데이터로 정제합니다."""
     if pd.isna(val) or val is None: return None
     val_str = str(val).strip()
     if val_str in ['-', 'N/A', 'NaN', '', 'None', 'null']: return None
@@ -59,7 +60,6 @@ def clean_numeric(val):
 
 def setup_driver():
     chrome_options = Options()
-    # 디버깅을 위해 잠시 헤드리스 모드 해제 원하시면 아래 줄을 주석(#) 처리하세요.
     chrome_options.add_argument('--headless')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
@@ -68,92 +68,118 @@ def setup_driver():
     chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
     return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
+def extract_metric(soup, keywords):
+    """HTML 테이블에서 라벨 키워드 바로 다음 값을 정확하게 매칭합니다."""
+    if isinstance(keywords, str):
+        keywords = [keywords]
+
+    ignore_keywords = ['제공됩니다', '통합 기준', '안내', '기준으로']
+
+    for tr in soup.find_all('tr'):
+        children = tr.find_all(['th', 'td'])
+        for i in range(len(children) - 1):
+            curr = children[i]
+            curr_text = curr.get_text(strip=True)
+            if any(ign in curr_text for ign in ignore_keywords): continue
+
+            for kw in keywords:
+                if kw in curr_text:
+                    next_elem = children[i + 1]
+                    if next_elem.name in ['td', 'th']:
+                        val = next_elem.get_text(strip=True)
+                        if val and val != '-': return val
+
+    for tag in soup.find_all(['dt', 'span', 'strong', 'th', 'td', 'div']):
+        text = tag.get_text(strip=True)
+        if len(text) > 20 or any(ign in text for ign in ignore_keywords): continue
+
+        for kw in keywords:
+            if kw in text:
+                sibling = tag.find_next_sibling()
+                if sibling and sibling.get_text(strip=True):
+                    s_text = sibling.get_text(strip=True)
+                    if not any(ign in s_text for ign in ignore_keywords) and s_text != '-':
+                        return s_text
+    return '-'
+
+def get_52_week_data_robust(soup):
+    """뉴스 기사 등을 피해 52주 최고/최저가를 안전하게 추출합니다."""
+    high_val, low_val = None, None
+    for tag in soup.find_all(['th', 'dt', 'span', 'strong', 'td', 'em']):
+        text = tag.get_text(strip=True).replace(' ', '')
+        if len(text) > 15: continue
+
+        if '52주' in text and '최고' in text and '최저' in text:
+            sibling = tag.find_next_sibling()
+            if not sibling and tag.parent and tag.parent.name == 'th':
+                sibling = tag.parent.find_next_sibling('td')
+            if sibling:
+                nums = re.findall(r'([0-9,]+)', sibling.get_text(strip=True))
+                if len(nums) >= 2:
+                    return clean_numeric(nums[0]), clean_numeric(nums[1])
+
+        if text in ['52주최고', '52주최고가', '52Weeks최고']:
+            sibling = tag.find_next_sibling()
+            if not sibling and tag.parent and tag.parent.name == 'th':
+                sibling = tag.parent.find_next_sibling('td')
+            if sibling:
+                match = re.search(r'([0-9,]+)', sibling.get_text(strip=True))
+                if match: high_val = clean_numeric(match.group(1))
+
+        if text in ['52주최저', '52주최저가', '52Weeks최저']:
+            sibling = tag.find_next_sibling()
+            if not sibling and tag.parent and tag.parent.name == 'th':
+                sibling = tag.parent.find_next_sibling('td')
+            if sibling:
+                match = re.search(r'([0-9,]+)', sibling.get_text(strip=True))
+                if match: low_val = clean_numeric(match.group(1))
+
+    return high_val, low_val
 
 def crawl_stock_details(driver, code):
-    url = f"https://finance.naver.com/item/main.naver?code={code}"
+    # 데이터 수집이 안정적인 모바일 종합 탭 활용
+    url = f"https://stock.naver.com/domestic/stock/{code}/total"
     driver.get(url)
-    time.sleep(2)
+    time.sleep(3)
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
-    # 1. 현재가 추출 시도
+    # 현재가 추출
     current_price = None
-    no_today = soup.select_one('.no_today .blind')
-    if no_today:
-        current_price = clean_numeric(no_today.text)
+    price_tag = soup.select_one('strong[class*="price"]')
+    if price_tag:
+        current_price = price_tag.get_text(strip=True)
+    else:
+        title_text = soup.title.text if soup.title else ""
+        match = re.search(r'([0-9,]+)\s*[+-]', title_text)
+        if match: current_price = match.group(1)
 
-    # 2. 가격 관련 지표 추출 헬퍼
-    def get_price_info(keyword):
-        span = soup.find('span', string=re.compile(keyword))
-        if span and span.parent:
-            blind = span.parent.select_one('.blind')
-            if blind: return clean_numeric(blind.text)
-        return None
-
-    # 3. 52주 최고/최저 추출
-    high_52, low_52 = None, None
-    th_52 = soup.find('th', string=re.compile(r'52.*최고'))
-    if th_52:
-        td_52 = th_52.find_next_sibling('td')
-        if td_52:
-            nums = re.findall(r'([0-9,]+)', td_52.text)
-            if len(nums) >= 2:
-                high_52, low_52 = clean_numeric(nums[0]), clean_numeric(nums[1])
-
-    # 4. 시가총액 추출
-    market_sum = None
-    ms_em = soup.select_one('#_market_sum')
-    if ms_em:
-        val = clean_numeric(ms_em.text)
-        if val: market_sum = int(val * 100_000_000)
-
-    # 5. 테이블 지표 추출
-    def get_table_val(keyword):
-        th = soup.find('th', string=re.compile(keyword))
-        if th:
-            td = th.find_next_sibling('td')
-            if td:
-                em = td.find('em')
-                return clean_numeric(em.text) if em else clean_numeric(td.text)
-        return None
-
-    # 6. 주당배당금 추출
-    div_yield = None
-    th_div = soup.find('th', string=re.compile('주당배당금'))
-    if th_div and th_div.parent:
-        tds = th_div.parent.find_all('td')
-        for td in reversed(tds):
-            val = clean_numeric(td.text)
-            if val is not None:
-                div_yield = val
-                break
-
-    # 💡 디버깅용 출력: 수집된 날것의 값들을 확인합니다.
-    print(f"   -> [추출 확인] 현재가: {current_price} | 52주최고: {high_52} | 52주최저: {low_52} | 시총: {market_sum}")
+    high_52, low_52 = get_52_week_data_robust(soup)
 
     data = {
         '수집시간': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         '종목코드': f'="{code}"',
         '종목명': STOCK_INFO[code],
-        '현재가': current_price,
-        '기준가': get_price_info('전일'),
-        '시가': get_price_info('시가'),
-        '고가': get_price_info('고가'),
-        '저가': get_price_info('저가'),
-        '거래량': get_price_info('거래량'),
-        '거래대금': int(get_price_info('거래대금') * 1_000_000) if get_price_info('거래대금') else None,
-        '52주최고': high_52,
-        '52주최저': low_52,
-        '시가총액': market_sum,
-        '외인소진율': get_table_val('외국인소진율'),
-        'PER': clean_numeric(soup.select_one('#_per').text) if soup.select_one('#_per') else None,
-        'EPS': clean_numeric(soup.select_one('#_eps').text) if soup.select_one('#_eps') else None,
-        '추정PER': clean_numeric(soup.select_one('#_cns_per').text) if soup.select_one('#_cns_per') else None,
-        '추정EPS': clean_numeric(soup.select_one('#_cns_eps').text) if soup.select_one('#_cns_eps') else None,
-        'PBR': clean_numeric(soup.select_one('#_pbr').text) if soup.select_one('#_pbr') else None,
-        'BPS': clean_numeric(soup.select_one('#_bps').text) if soup.select_one('#_bps') else None,
-        '배당수익률': clean_numeric(soup.select_one('#_dvr').text) if soup.select_one('#_dvr') else None,
-        '주당배당금': div_yield
+        '현재가': clean_numeric(current_price),
+        '기준가': clean_numeric(extract_metric(soup, ['기준가'])),
+        '시가': clean_numeric(extract_metric(soup, ['시가'])),
+        '고가': clean_numeric(extract_metric(soup, ['고가'])),
+        '저가': clean_numeric(extract_metric(soup, ['저가'])), 
+        '거래량': clean_numeric(extract_metric(soup, ['거래량'])),
+        '거래대금': clean_numeric(extract_metric(soup, ['대금', '거래대금'])),
+        '52주최고': high_52,                      
+        '52주최저': low_52,                      
+        '시가총액': clean_numeric(extract_metric(soup, ['시가총액', '시총'])),
+        '외인소진율': clean_numeric(extract_metric(soup, ['외인소진율', '외국인지분율'])),
+        'PER': clean_numeric(extract_metric(soup, ['PER'])),
+        'EPS': clean_numeric(extract_metric(soup, ['EPS'])),
+        '추정PER': clean_numeric(extract_metric(soup, ['추정PER'])),
+        '추정EPS': clean_numeric(extract_metric(soup, ['추정EPS'])),
+        'PBR': clean_numeric(extract_metric(soup, ['PBR'])),
+        'BPS': clean_numeric(extract_metric(soup, ['BPS'])),
+        '배당수익률': clean_numeric(extract_metric(soup, ['배당수익률'])),
+        '주당배당금': clean_numeric(extract_metric(soup, ['주당배당금']))
     }
+
     return data
 
 def main():
@@ -171,8 +197,8 @@ def main():
 
         if all_data:
             df = pd.DataFrame(all_data)
-            print("📊 [생성된 데이터프레임 미리보기]")
-            print(df.head()) # 데이터가 잘 들어왔는지 터미널에서 확인
+            print("📊 수집된 데이터프레임 미리보기:")
+            print(df[['종목명', '현재가', '52주최고', '시가총액']])
 
             file_name = f"insurance_stock_data_{datetime.now().strftime('%Y%m%d')}.csv"
             file_exists = os.path.exists(file_name)
