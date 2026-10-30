@@ -177,8 +177,12 @@ def parse_52week_adjusted(text):
     return None, None
 
 
+def _has_52weeks(d):
+    return re.search(r'52\s*Weeks?', d.find_element(By.TAG_NAME, 'body').text, re.I)
+
+
 def open_analysis_tab(driver, timeout=15):
-    """상단 '종목분석' 탭을 클릭하고 '52Weeks' 항목이 화면에 뜰 때까지 대기. 성공 여부 반환."""
+    """'종목분석' 탭으로 이동. 링크(href)가 있으면 직접 이동, 없으면 클릭. 성공 여부 반환."""
     xpaths = [
         "//a[normalize-space()='종목분석']",
         "//button[normalize-space()='종목분석']",
@@ -186,14 +190,31 @@ def open_analysis_tab(driver, timeout=15):
     ]
     for xp in xpaths:
         for el in driver.find_elements(By.XPATH, xp):
+            href = el.get_attribute('href')
             try:
-                driver.execute_script("arguments[0].click();", el)
-                WebDriverWait(driver, timeout).until(
-                    lambda d: re.search(r'52\s*Weeks?', d.find_element(By.TAG_NAME, 'body').text, re.I))
+                if href and href.startswith('http'):
+                    driver.get(href)
+                else:
+                    driver.execute_script("arguments[0].click();", el)
+                WebDriverWait(driver, timeout).until(_has_52weeks)
                 return True
             except Exception:
                 continue
     return False
+
+
+def dump_debug(driver, code, tag):
+    """수집 실패 시 화면 캡처/텍스트/HTML을 저장해 원인 분석에 사용."""
+    try:
+        base = f"debug_{code}_{tag}"
+        driver.save_screenshot(base + ".png")
+        with open(base + ".txt", "w", encoding="utf-8") as f:
+            f.write(driver.find_element(By.TAG_NAME, 'body').text)
+        with open(base + ".html", "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        print(f"🛠 디버그 파일 저장: {base}.png / .txt / .html")
+    except Exception as e:
+        print(f"디버그 저장 실패: {e}")
 
 
 def fetch_price_and_52week(driver, code):
@@ -224,8 +245,14 @@ def fetch_price_and_52week(driver, code):
             time.sleep(0.5)
             body = driver.find_element(By.TAG_NAME, 'body').text
             high_52, low_52 = parse_52week_adjusted(body)
+            if high_52 is None:
+                print(f"⚠️ [{name}] 종목분석 탭은 열렸지만 '52Weeks 최고/최저'를 못 읽음")
+                dump_debug(driver, code, f"parse{attempt}")
+            else:
+                print(f"✔ [{name}] 종목분석 탭(수정주가)에서 52주 수집: {high_52:,} / {low_52:,}")
         else:
             print(f"⚠️ [{name}] '종목분석' 탭을 찾지 못했습니다.")
+            dump_debug(driver, code, f"notab{attempt}")
 
         if price is not None and high_52 is not None and low_52 is not None and low_52 <= high_52:
             if not (low_52 <= price <= high_52):
@@ -249,7 +276,7 @@ def fetch_price_and_52week(driver, code):
                     nums = re.findall(r'([0-9,]+)', td_52.text)
                     if len(nums) >= 2:
                         high_52, low_52 = clean_numeric(nums[0]), clean_numeric(nums[1])
-                        print(f"ℹ️ [{name}] 52주 값을 PC 페이지로 대체 수집")
+                        print(f"❗ [{name}] 종목분석 탭 수집 실패 → 기존 PC 페이지 값으로 대체됨 (요청한 값과 다를 수 있음)")
         except Exception as e:
             print(f"⚠️ [{name}] PC 52주 폴백 중 예외 발생: {e}")
 
