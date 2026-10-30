@@ -6,14 +6,17 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
 from validator import StockDataValidator
 from email_notifier import NaverMailNotifier
 
-# 수집 대상 종목 리스트 (서울보증보험 '031210' 정상 복구 완료)
+# 수집 대상 종목 리스트
 STOCK_INFO = {
     '000810': '삼성화재',
     '005830': 'DB손해보험',
@@ -28,6 +31,9 @@ STOCK_INFO = {
     '000540': '흥국화재',
     '000545': '흥국화재우'
 }
+
+MAX_RETRY = 3  # 현재가 / 52주 값 수집 실패 시 재시도 횟수
+
 
 def clean_numeric(val):
     """문자열 형태의 수치를 숫자(int, float) 데이터로 정제합니다."""
@@ -135,29 +141,129 @@ def setup_driver():
     return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 
-def crawl_stock_details(driver, code):
-    # 1단계: 기존에 잘 되던 모바일 종합(total) 탭에서 현재가 및 일반 지표 수집
-    url_mobile = f"https://stock.naver.com/domestic/stock/{code}/total"
-    driver.get(url_mobile)
-    time.sleep(3.0)
-    soup_mobile = BeautifulSoup(driver.page_source, 'html.parser')
+# ──────────────────────────────────────────────────────────────
+# 현재가 / 52주 최고·최저 수집 (화면 텍스트 기반)
+# ──────────────────────────────────────────────────────────────
+def get_body_text(driver, url, timeout=15):
+    """페이지를 열고 '52주 최저' 문구와 현재가(○○원)가 화면에 뜰 때까지 기다린 뒤 보이는 텍스트를 반환."""
+    driver.get(url)
 
-    # 실시간 '현재가' 추출
-    current_price_str = None
-    price_tag = soup_mobile.select_one('strong[class*="price"]')
-    if price_tag:
-        current_price_str = price_tag.get_text(strip=True)
-    else:
-        title_text = soup_mobile.title.text if soup_mobile.title else ""
-        match = re.search(r'([0-9,]+)\s*[+-]', title_text)
-        if match:
-            current_price_str = match.group(1)
+    def loaded(d):
+        txt = d.find_element(By.TAG_NAME, 'body').text
+        return ('52주' in txt) and re.search(r'[0-9][0-9,]*\s*원', txt) is not None
+
+    try:
+        WebDriverWait(driver, timeout).until(loaded)
+    except TimeoutException:
+        pass  # 타임아웃이어도 일단 현재 텍스트로 시도
+    time.sleep(1.0)  # 숫자가 완전히 렌더링될 여유 시간
+    return driver.find_element(By.TAG_NAME, 'body').text
+
+
+def parse_current_price(text):
+    """상단 헤더(종목명 아래, '시세정보' 위)의 첫 번째 '○○,○○○원' 을 현재가로 사용."""
+    head = text.split('시세정보')[0] if '시세정보' in text else text[:600]
+    m = re.search(r'([0-9][0-9,]*)\s*원', head)
+    return clean_numeric(m.group(1)) if m else None
+
+
+def parse_52week_adjusted(text):
+    """종목분석 표의 '52Weeks 최고/최저   64,800원 / 39,650원' (수정주가 기준) 추출. 반환: (최고, 최저)"""
+    m = re.search(
+        r'52\s*Weeks?\s*최고\s*/\s*최저\s*([0-9][0-9,]*)\s*원?\s*/\s*([0-9][0-9,]*)\s*원?',
+        text, re.I)
+    if m:
+        return clean_numeric(m.group(1)), clean_numeric(m.group(2))
+    return None, None
+
+
+def open_analysis_tab(driver, timeout=15):
+    """상단 '종목분석' 탭을 클릭하고 '52Weeks' 항목이 화면에 뜰 때까지 대기. 성공 여부 반환."""
+    xpaths = [
+        "//a[normalize-space()='종목분석']",
+        "//button[normalize-space()='종목분석']",
+        "//*[self::a or self::button or self::span or self::li][contains(normalize-space(.),'종목분석')]",
+    ]
+    for xp in xpaths:
+        for el in driver.find_elements(By.XPATH, xp):
+            try:
+                driver.execute_script("arguments[0].click();", el)
+                WebDriverWait(driver, timeout).until(
+                    lambda d: re.search(r'52\s*Weeks?', d.find_element(By.TAG_NAME, 'body').text, re.I))
+                return True
+            except Exception:
+                continue
+    return False
+
+
+def fetch_price_and_52week(driver, code):
+    """
+    - 현재가: 왼쪽 헤더 (화면에 보이는 값)
+    - 52주 최고/최저: 오른쪽 종목분석 표 '52Weeks 최고/최저' (수정주가 기준)
+    값이 비면 최대 MAX_RETRY회 재시도합니다.
+    """
+    url = f"https://stock.naver.com/domestic/stock/{code}/total"
+    name = STOCK_INFO[code]
+    price, high_52, low_52 = None, None, None
+    soup = None
+
+    for attempt in range(1, MAX_RETRY + 1):
+        text = get_body_text(driver, url)
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+
+        # 1) 현재가
+        price = parse_current_price(text)
+        if price is None:
+            title_text = soup.title.text if soup.title else ""
+            m = re.search(r'([0-9][0-9,]{2,})', title_text)
+            if m:
+                price = clean_numeric(m.group(1))
+
+        # 2) 종목분석 탭 → 52Weeks 최고/최저 (수정주가)
+        if open_analysis_tab(driver):
+            time.sleep(0.5)
+            body = driver.find_element(By.TAG_NAME, 'body').text
+            high_52, low_52 = parse_52week_adjusted(body)
+        else:
+            print(f"⚠️ [{name}] '종목분석' 탭을 찾지 못했습니다.")
+
+        if price is not None and high_52 is not None and low_52 is not None and low_52 <= high_52:
+            if not (low_52 <= price <= high_52):
+                print(f"ℹ️ [{name}] 현재가({price})가 52주 범위({low_52}~{high_52}) 밖입니다 "
+                      f"(NXT 시세 등 기준 차이일 수 있음)")
+            break
+
+        print(f"⚠️ [{name}] 시도 {attempt}/{MAX_RETRY} - 현재가={price}, 52주최고={high_52}, 52주최저={low_52}")
+        time.sleep(1.5)
+
+    # 폴백: PC 종목분석 페이지
+    if high_52 is None or low_52 is None:
+        try:
+            driver.get(f"https://finance.naver.com/item/main.naver?code={code}")
+            time.sleep(1.5)
+            soup_pc = BeautifulSoup(driver.page_source, 'html.parser')
+            th_52 = soup_pc.find('th', string=re.compile(r'52.*최고'))
+            if th_52:
+                td_52 = th_52.find_next_sibling('td')
+                if td_52:
+                    nums = re.findall(r'([0-9,]+)', td_52.text)
+                    if len(nums) >= 2:
+                        high_52, low_52 = clean_numeric(nums[0]), clean_numeric(nums[1])
+                        print(f"ℹ️ [{name}] 52주 값을 PC 페이지로 대체 수집")
+        except Exception as e:
+            print(f"⚠️ [{name}] PC 52주 폴백 중 예외 발생: {e}")
+
+    if price is None or high_52 is None or low_52 is None:
+        print(f"❌ [{name}] 최종 수집 실패: 현재가={price}, 52주최고={high_52}, 52주최저={low_52}")
+
+    return price, high_52, low_52, soup
+
+
+def crawl_stock_details(driver, code):
+    # 현재가 + 52주 최고/최저 (재시도/검증 포함)
+    price, high_52, low_52, soup_mobile = fetch_price_and_52week(driver, code)
 
     raw_data = {
-        '수집시간': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        '종목코드': f'="{code}"',
-        '종목명': STOCK_INFO[code],
-        '현재가': current_price_str,
         '기준가': extract_metric(soup_mobile, ['기준가']),
         '시가': extract_metric(soup_mobile, ['시가']),
         '고가': extract_metric(soup_mobile, ['고가']),
@@ -176,37 +282,19 @@ def crawl_stock_details(driver, code):
         '주당배당금': extract_metric(soup_mobile, ['주당배당금'])
     }
 
-    # 2단계: PC 종목분석 페이지로 이동해서 '수정주가' 기준의 52주 최고/최저가만 따로 정확히 읽어오기
-    high_52, low_52 = None, None
-    try:
-        url_pc = f"https://finance.naver.com/item/main.naver?code={code}"
-        driver.get(url_pc)
-        time.sleep(1.5)
-        soup_pc = BeautifulSoup(driver.page_source, 'html.parser')
-
-        th_52 = soup_pc.find('th', string=re.compile(r'52.*최고'))
-        if th_52:
-            td_52 = th_52.find_next_sibling('td')
-            if td_52:
-                nums = re.findall(r'([0-9,]+)', td_52.text)
-                if len(nums) >= 2:
-                    high_52, low_52 = clean_numeric(nums[0]), clean_numeric(nums[1])
-    except Exception as e:
-        print(f"⚠️ [{STOCK_INFO[code]}] PC 52주 데이터 수집 중 예외 발생: {e}")
-
     data = {
-        '수집시간': raw_data['수집시간'],
-        '종목코드': raw_data['종목코드'],
-        '종목명': raw_data['종목명'],
-        '현재가': clean_numeric(raw_data['현재가']),
+        '수집시간': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        '종목코드': f'="{code}"',
+        '종목명': STOCK_INFO[code],
+        '현재가': price,
         '기준가': clean_numeric(raw_data['기준가']),
         '시가': clean_numeric(raw_data['시가']),
         '고가': clean_numeric(raw_data['고가']),
-        '저가': clean_numeric(raw_data['저가']), 
+        '저가': clean_numeric(raw_data['저가']),
         '거래량': clean_numeric(raw_data['거래량']),
         '거래대금': clean_numeric(raw_data['거래대금']),
-        '52주최고': high_52,                      # PC 수정주가 기준 최고가 적용[cite: 1, 2]
-        '52주최저': low_52,                      # PC 수정주가 기준 최저가 적용[cite: 1, 2]
+        '52주최고': high_52,
+        '52주최저': low_52,
         '시가총액': clean_numeric(raw_data['시가총액']),
         '외인소진율': clean_numeric(raw_data['외인소진율']),
         'PER': clean_numeric(raw_data['PER']),
@@ -235,11 +323,13 @@ def main():
         for code in STOCK_INFO.keys():
             print(f"[{STOCK_INFO[code]}] 수집 중...")
             stock_data = crawl_stock_details(driver, code)
+            print(f"   → 현재가 {stock_data['현재가']} / "
+                  f"52주 최고 {stock_data['52주최고']} / 최저 {stock_data['52주최저']}")
             all_data.append(stock_data)
 
         if all_data:
             df = pd.DataFrame(all_data)
-            
+
             file_name = f"insurance_stock_data_{datetime.now().strftime('%Y%m%d')}.csv"
             file_exists = os.path.exists(file_name)
 
@@ -255,7 +345,7 @@ def main():
             report = validator.validate(df)
 
             print("📧 [네이버 메일 알림 발송 중...]")
-            notifier.send_report(report)    
+            notifier.send_report(report)
 
     except Exception as e:
         print(f"\n크롤링 중 오류가 발생했습니다: {e}")
