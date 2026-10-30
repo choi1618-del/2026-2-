@@ -168,9 +168,9 @@ def parse_current_price(text):
 
 
 def parse_52week_adjusted(text):
-    """종목분석 표의 '52Weeks 최고/최저   64,800원 / 39,650원' (수정주가 기준) 추출. 반환: (최고, 최저)"""
+    """'52Weeks 최고/최저  64,800원 / 39,650원' (수정주가) 추출. 반환: (최고, 최저)"""
     m = re.search(
-        r'52\s*Weeks?\s*최고\s*/\s*최저\s*([0-9][0-9,]*)\s*원?\s*/\s*([0-9][0-9,]*)\s*원?',
+        r'52\s*(?:Weeks?|주)\s*최고\s*/\s*최저\s*([0-9][0-9,]*)\s*원?\s*/\s*([0-9][0-9,]*)\s*원?',
         text, re.I)
     if m:
         return clean_numeric(m.group(1)), clean_numeric(m.group(2))
@@ -204,15 +204,21 @@ def open_analysis_tab(driver, timeout=15):
 
 
 def dump_debug(driver, code, tag):
-    """수집 실패 시 화면 캡처/텍스트/HTML을 저장해 원인 분석에 사용."""
+    """수집 실패 시 원인 분석용 정보를 파일로 저장하고, Actions 로그에도 바로 출력."""
     try:
+        text = driver.find_element(By.TAG_NAME, 'body').text
+        print(f"🛠 [디버그 {code}/{tag}] URL={driver.current_url} / TITLE={driver.title}")
+        print(f"🛠 [디버그 {code}/{tag}] 본문 길이={len(text)}자")
+        lines_52 = [ln for ln in text.splitlines() if '52' in ln]
+        print(f"🛠 [디버그 {code}/{tag}] '52' 포함 줄: {lines_52[:10]}")
+        print(f"🛠 [디버그 {code}/{tag}] 본문 앞부분: {text[:600]!r}")
+
         base = f"debug_{code}_{tag}"
         driver.save_screenshot(base + ".png")
         with open(base + ".txt", "w", encoding="utf-8") as f:
-            f.write(driver.find_element(By.TAG_NAME, 'body').text)
+            f.write(text)
         with open(base + ".html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
-        print(f"🛠 디버그 파일 저장: {base}.png / .txt / .html")
     except Exception as e:
         print(f"디버그 저장 실패: {e}")
 
@@ -220,23 +226,68 @@ def dump_debug(driver, code, tag):
 INFO_URL = "https://stock.naver.com/domestic/stock/{code}/info/company"
 
 
-def fetch_52week_adjusted(driver, code, timeout=15):
-    """종목분석 페이지에서 '52Weeks 최고/최저'(수정주가)를 읽어 (최고, 최저) 반환."""
+def _scan_all_texts(driver):
+    """본문 텍스트 → HTML 소스 텍스트 → 모든 iframe 순으로 52Weeks 값을 찾는다."""
+    # (1) 화면 텍스트
+    try:
+        body = driver.find_element(By.TAG_NAME, 'body').text
+        h, l = parse_52week_adjusted(body)
+        if h is not None:
+            return h, l, 'body'
+    except Exception:
+        pass
+    # (2) HTML 소스(보이지 않는 요소 포함)
+    try:
+        src_text = BeautifulSoup(driver.page_source, 'html.parser').get_text(' ', strip=True)
+        h, l = parse_52week_adjusted(src_text)
+        if h is not None:
+            return h, l, 'page_source'
+    except Exception:
+        pass
+    # (3) iframe 내부
+    try:
+        frames = driver.find_elements(By.TAG_NAME, 'iframe')
+        for fr in frames:
+            try:
+                driver.switch_to.frame(fr)
+                t = driver.find_element(By.TAG_NAME, 'body').text
+                h, l = parse_52week_adjusted(t)
+                if h is not None:
+                    return h, l, 'iframe'
+            except Exception:
+                pass
+            finally:
+                driver.switch_to.default_content()
+    except Exception:
+        pass
+    return None, None, None
+
+
+def fetch_52week_adjusted(driver, code, timeout=25):
+    """종목분석 페이지에서 '52Weeks 최고/최저'(수정주가)를 읽어 (최고, 최저) 반환. 스크롤하며 여러 방식으로 탐색."""
     name = STOCK_INFO[code]
     driver.get(INFO_URL.format(code=code))
-    try:
-        WebDriverWait(driver, timeout).until(_has_52weeks)
-    except TimeoutException:
-        print(f"⚠️ [{name}] 종목분석 페이지에서 '52Weeks' 항목이 로딩되지 않음")
-        return None, None
-    time.sleep(0.5)
-    body = driver.find_element(By.TAG_NAME, 'body').text
-    high_52, low_52 = parse_52week_adjusted(body)
-    if high_52 is None:
-        print(f"⚠️ [{name}] '52Weeks 최고/최저' 값을 읽지 못함")
-    else:
-        print(f"✔ [{name}] 종목분석 페이지(수정주가) 52주 수집: {high_52:,} / {low_52:,}")
-    return high_52, low_52
+
+    end = time.time() + timeout
+    step = 0
+    while time.time() < end:
+        high_52, low_52, where = _scan_all_texts(driver)
+        if high_52 is not None:
+            print(f"✔ [{name}] 종목분석 페이지(수정주가) 52주 수집({where}): {high_52:,} / {low_52:,}")
+            return high_52, low_52
+        # 늦게 로딩되는 표를 위해 조금씩 스크롤
+        try:
+            driver.execute_script("window.scrollBy(0, 600);")
+            driver.execute_script(
+                "document.querySelectorAll('*').forEach(e=>{if(e.scrollHeight>e.clientHeight+50 && "
+                "getComputedStyle(e).overflowY.match(/auto|scroll/)) e.scrollTop += 600;});")
+        except Exception:
+            pass
+        step += 1
+        time.sleep(1.0)
+
+    print(f"⚠️ [{name}] 종목분석 페이지에서 '52Weeks 최고/최저'를 찾지 못함 (제한시간 {timeout}초)")
+    return None, None
 
 
 def fetch_price_and_52week(driver, code):
