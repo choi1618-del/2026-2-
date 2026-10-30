@@ -29,7 +29,6 @@ STOCK_INFO = {
 }
 
 def clean_numeric(val):
-    """문자열 형태의 수치를 숫자(int, float) 데이터로 정제합니다."""
     if pd.isna(val) or val is None: return None
     val_str = str(val).strip()
     if val_str in ['-', 'N/A', 'NaN', '', 'None', 'null']: return None
@@ -60,6 +59,7 @@ def clean_numeric(val):
 
 def setup_driver():
     chrome_options = Options()
+    # 디버깅을 위해 잠시 헤드리스 모드 해제 원하시면 아래 줄을 주석(#) 처리하세요.
     chrome_options.add_argument('--headless')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
@@ -70,13 +70,12 @@ def setup_driver():
 
 
 def crawl_stock_details(driver, code):
-    # PC 메인 주소 접속 (수정주가 및 고정 태그 지원)
     url = f"https://finance.naver.com/item/main.naver?code={code}"
     driver.get(url)
     time.sleep(2)
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
-    # 1. 현재가 확실하게 추출
+    # 1. 현재가 추출 시도
     current_price = None
     no_today = soup.select_one('.no_today .blind')
     if no_today:
@@ -90,7 +89,7 @@ def crawl_stock_details(driver, code):
             if blind: return clean_numeric(blind.text)
         return None
 
-    # 3. 52주 최고/최저 (모든 업종 표기법 대응 및 수정주가 추출 정규식 적용)
+    # 3. 52주 최고/최저 추출
     high_52, low_52 = None, None
     th_52 = soup.find('th', string=re.compile(r'52.*최고'))
     if th_52:
@@ -100,7 +99,7 @@ def crawl_stock_details(driver, code):
             if len(nums) >= 2:
                 high_52, low_52 = clean_numeric(nums[0]), clean_numeric(nums[1])
 
-    # 4. 시가총액 (단위: 억원 -> 원 환산)
+    # 4. 시가총액 추출
     market_sum = None
     ms_em = soup.select_one('#_market_sum')
     if ms_em:
@@ -127,6 +126,9 @@ def crawl_stock_details(driver, code):
             if val is not None:
                 div_yield = val
                 break
+
+    # 💡 디버깅용 출력: 수집된 날것의 값들을 확인합니다.
+    print(f"   -> [추출 확인] 현재가: {current_price} | 52주최고: {high_52} | 52주최저: {low_52} | 시총: {market_sum}")
 
     data = {
         '수집시간': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -169,7 +171,9 @@ def main():
 
         if all_data:
             df = pd.DataFrame(all_data)
-            
+            print("📊 [생성된 데이터프레임 미리보기]")
+            print(df.head()) # 데이터가 잘 들어왔는지 터미널에서 확인
+
             file_name = f"insurance_stock_data_{datetime.now().strftime('%Y%m%d')}.csv"
             file_exists = os.path.exists(file_name)
 
