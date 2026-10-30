@@ -217,6 +217,28 @@ def dump_debug(driver, code, tag):
         print(f"디버그 저장 실패: {e}")
 
 
+INFO_URL = "https://stock.naver.com/domestic/stock/{code}/info/company"
+
+
+def fetch_52week_adjusted(driver, code, timeout=15):
+    """종목분석 페이지에서 '52Weeks 최고/최저'(수정주가)를 읽어 (최고, 최저) 반환."""
+    name = STOCK_INFO[code]
+    driver.get(INFO_URL.format(code=code))
+    try:
+        WebDriverWait(driver, timeout).until(_has_52weeks)
+    except TimeoutException:
+        print(f"⚠️ [{name}] 종목분석 페이지에서 '52Weeks' 항목이 로딩되지 않음")
+        return None, None
+    time.sleep(0.5)
+    body = driver.find_element(By.TAG_NAME, 'body').text
+    high_52, low_52 = parse_52week_adjusted(body)
+    if high_52 is None:
+        print(f"⚠️ [{name}] '52Weeks 최고/최저' 값을 읽지 못함")
+    else:
+        print(f"✔ [{name}] 종목분석 페이지(수정주가) 52주 수집: {high_52:,} / {low_52:,}")
+    return high_52, low_52
+
+
 def fetch_price_and_52week(driver, code):
     """
     - 현재가: 왼쪽 헤더 (화면에 보이는 값)
@@ -240,19 +262,10 @@ def fetch_price_and_52week(driver, code):
             if m:
                 price = clean_numeric(m.group(1))
 
-        # 2) 종목분석 탭 → 52Weeks 최고/최저 (수정주가)
-        if open_analysis_tab(driver):
-            time.sleep(0.5)
-            body = driver.find_element(By.TAG_NAME, 'body').text
-            high_52, low_52 = parse_52week_adjusted(body)
-            if high_52 is None:
-                print(f"⚠️ [{name}] 종목분석 탭은 열렸지만 '52Weeks 최고/최저'를 못 읽음")
-                dump_debug(driver, code, f"parse{attempt}")
-            else:
-                print(f"✔ [{name}] 종목분석 탭(수정주가)에서 52주 수집: {high_52:,} / {low_52:,}")
-        else:
-            print(f"⚠️ [{name}] '종목분석' 탭을 찾지 못했습니다.")
-            dump_debug(driver, code, f"notab{attempt}")
+        # 2) 종목분석(기업현황) 페이지 직접 접속 → 52Weeks 최고/최저 (수정주가)
+        high_52, low_52 = fetch_52week_adjusted(driver, code)
+        if high_52 is None:
+            dump_debug(driver, code, f"try{attempt}")
 
         if price is not None and high_52 is not None and low_52 is not None and low_52 <= high_52:
             if not (low_52 <= price <= high_52):
