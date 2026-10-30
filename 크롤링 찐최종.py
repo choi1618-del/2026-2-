@@ -24,11 +24,10 @@ STOCK_INFO = {
     '003690': '코리안리',
     '244920': '에이플러스에셋',
     '031210': '서울보증보험',
-    '211050': '인카금융서비',
+    '211050': '인카금융서비스',
     '000540': '흥국화재',
     '000545': '흥국화재우'
 }
-
 
 def clean_numeric(val):
     """문자열 형태의 수치를 숫자(int, float) 데이터로 정제합니다."""
@@ -80,19 +79,45 @@ def clean_numeric(val):
 
 def get_52_week_data_direct(soup):
     """
-    태그 구조를 무시하고 페이지 전체 텍스트에서 정규표현식으로 52주 최고/최저가를 직접 추출합니다.
+    뉴스 기사 등 엉뚱한 텍스트를 피하기 위해, 페이지 전체가 아닌 
+    짧은 라벨 태그(th, span, strong 등) 위주로 형제 노드를 탐색합니다.
     """
-    # 페이지의 모든 텍스트를 공백 한 칸으로 연결하여 추출
-    page_text = soup.get_text(separator=' ', strip=True)
+    high_val, low_val = None, None
     
-    # '52주 최고' 또는 '52주최고' 뒤에 나오는 숫자(콤마 포함) 추출
-    high_match = re.search(r'52주\s*최고\s*([0-9,]+)', page_text)
-    # '52주 최저' 또는 '52주최저' 뒤에 나오는 숫자(콤마 포함) 추출
-    low_match = re.search(r'52주\s*최저\s*([0-9,]+)', page_text)
-    
-    high_val = clean_numeric(high_match.group(1)) if high_match else None
-    low_val = clean_numeric(low_match.group(1)) if low_match else None
-    
+    for tag in soup.find_all(['th', 'dt', 'span', 'strong', 'td', 'em']):
+        text = tag.get_text(strip=True).replace(' ', '')
+        
+        if len(text) > 15:
+            continue
+            
+        if '52주' in text and '최고' in text and '최저' in text:
+            sibling = tag.find_next_sibling()
+            if not sibling and tag.parent and tag.parent.name == 'th':
+                sibling = tag.parent.find_next_sibling('td')
+                
+            if sibling:
+                nums = re.findall(r'([0-9,]+)', sibling.get_text(strip=True))
+                if len(nums) >= 2:
+                    return clean_numeric(nums[0]), clean_numeric(nums[1])
+                    
+        if text in ['52주최고', '52주최고가']:
+            sibling = tag.find_next_sibling()
+            if not sibling and tag.parent and tag.parent.name == 'th':
+                sibling = tag.parent.find_next_sibling('td')
+            if sibling:
+                match = re.search(r'([0-9,]+)', sibling.get_text(strip=True))
+                if match:
+                    high_val = clean_numeric(match.group(1))
+
+        if text in ['52주최저', '52주최저가']:
+            sibling = tag.find_next_sibling()
+            if not sibling and tag.parent and tag.parent.name == 'th':
+                sibling = tag.parent.find_next_sibling('td')
+            if sibling:
+                match = re.search(r'([0-9,]+)', sibling.get_text(strip=True))
+                if match:
+                    low_val = clean_numeric(match.group(1))
+                    
     return high_val, low_val
 
 
@@ -155,16 +180,28 @@ def setup_driver():
 
 
 def crawl_stock_details(driver, code):
-    url = f"https://stock.naver.com/domestic/stock/{code}/info/company"
+    # 종합(total) 탭으로 URL 변경 완료 (현재가 및 실시간 데이터 정확도 향상)
+    url = f"https://stock.naver.com/domestic/stock/{code}/total"
     driver.get(url)
     time.sleep(3.5)
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
-    # 기존 지표들은 기존 함수로 추출
+    # 실시간 '현재가' 직접 추출 로직 추가 완료
+    current_price_str = None
+    price_tag = soup.select_one('strong[class*="price"]')
+    if price_tag:
+        current_price_str = price_tag.get_text(strip=True)
+    else:
+        title_text = soup.title.text if soup.title else ""
+        match = re.search(r'([0-9,]+)\s*[+-]', title_text)
+        if match:
+            current_price_str = match.group(1)
+
     raw_data = {
         '수집시간': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         '종목코드': f'="{code}"',
         '종목명': STOCK_INFO[code],
+        '현재가': current_price_str,
         '기준가': extract_metric(soup, ['기준가']),
         '시가': extract_metric(soup, ['시가']),
         '고가': extract_metric(soup, ['고가']),
@@ -183,13 +220,14 @@ def crawl_stock_details(driver, code):
         '주당배당금': extract_metric(soup, ['주당배당금'])
     }
 
-    # 💡 [핵심 변경 사항] 텍스트 전체에서 정규식으로 직접 추출하는 함수 호출
+    # 52주 최고/최저가 추출 함수 호출
     high_52, low_52 = get_52_week_data_direct(soup)
 
     data = {
         '수집시간': raw_data['수집시간'],
         '종목코드': raw_data['종목코드'],
         '종목명': raw_data['종목명'],
+        '현재가': clean_numeric(raw_data['현재가']),
         '기준가': clean_numeric(raw_data['기준가']),
         '시가': clean_numeric(raw_data['시가']),
         '고가': clean_numeric(raw_data['고가']),
@@ -231,8 +269,7 @@ def main():
         if all_data:
             df = pd.DataFrame(all_data)
             
-            if '기준가' in df.columns and '현재가' not in df.columns:
-                df['현재가'] = df['기준가']
+            # (오류의 원인이었던 df['현재가'] = df['기준가'] 강제 덮어쓰기 2줄 삭제 완료)
             
             file_name = f"insurance_stock_data_{datetime.now().strftime('%Y%m%d')}.csv"
             file_exists = os.path.exists(file_name)
