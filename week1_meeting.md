@@ -19,22 +19,20 @@
 
 C:\Users\gayou\Pictures\Screenshots\스크린샷 2026-11-09 024149.png
 
-
-
 ---
 
 ## 2. 데이터 확인을 토대로 csv파일로 압축
 
 [extract_samsung.py](https://github.com/choi1618-del/2026-2-/blob/main/extract_samsung.py "extract_samsung.py")
 
-ls -l samsung_fire_all.csv
+ls -l samsung_fire_master_18vars.csv
 
-head -n 5 samsung_fire_all.csv
+head -n 5 samsung_fire_master_18vars.csv
 
 - 삼성화재 파일(000810.html)이 없는 날:  8개
 - 삼성화재 파일이 정상적으로 존재하는 날: 583개
 
-
+---
 
 ## 3. 추가적인 결측 확인 및 다룸
 - 다른 종목들은 2주차 실습에서 필요한 csv 파일로 압축 후 확인할 예정
@@ -49,8 +47,6 @@ head -n 5 samsung_fire_all.csv
 ### 3-2. 25년 7월 결측치 처리
 
 fix_samsung_july.py
-
-
 
 ---
 
