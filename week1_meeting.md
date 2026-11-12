@@ -9,14 +9,12 @@
 - 보유 종목 수: 4307개
 - 결측일(주말/휴장/누락): 299일
 
-**[그림 1. 결측일 분포 그림]**
+[그림 1. 결측일 분포 그림]
 
 [week1_submit.py](https://github.com/choi1618-del/2026-2-/blob/main/week1_submit.py "week1_submit.py")
-
 [week1_scope_plot.png](https://github.com/choi1618-del/2026-2-/blob/main/week1_scope_plot.png "week1_scope_plot.png")
 
-**[그림 2. html 내의 데이터 확인]**
-
+[그림 2. html 내의 데이터 확인]
 C:\Users\gayou\Pictures\Screenshots\스크린샷 2026-11-09 024149.png
 
 ---
@@ -26,7 +24,6 @@ C:\Users\gayou\Pictures\Screenshots\스크린샷 2026-11-09 024149.png
 [extract_samsung.py](https://github.com/choi1618-del/2026-2-/blob/main/extract_samsung.py "extract_samsung.py")
 
 ls -l samsung_fire_master_23vars.csv
-
 head -n 5 samsung_fire_master_23vars.csv
 
 - 삼성화재 파일(000810.html)이 없는 날:  8개
@@ -58,6 +55,19 @@ fix_samsung_july.py
 2. 종목 전체 다 해보기....
 3. 질문 자체는 깊을 필요없음. 내가 빅데이터를 읽어서 질문에 답할 수 있음에 집중. 빅데이터를 읽었다!!
 
+---
+
+# 2주차 면담 준비 자료
 
 ---
-# 2주차 면담 준비 자료
+
+## 1. 전체 업종 csv파일로 압축
+
+### 1-1. 전체 업종에 대한 csv파일 생성
+
+[extract_all_stocks.py]
+
+- stock_csv_results 폴더 안에 종목별로 수백 개의 CSV 파일 저장
+- /home/s202420495/stock_csv_results 폴더 안에 000810_history.csv, 005930_history.csv처럼 종목코드 이름표가 붙은 약 940여 개의 개별 파일이 생성
+
+### 1-2. 전체 업종 2025년 7월 결측치 이어붙이기(최종 csv 파일)
