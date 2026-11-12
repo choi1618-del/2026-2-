@@ -25,9 +25,9 @@ C:\Users\gayou\Pictures\Screenshots\스크린샷 2026-11-09 024149.png
 
 [extract_samsung.py](https://github.com/choi1618-del/2026-2-/blob/main/extract_samsung.py "extract_samsung.py")
 
-ls -l samsung_fire_master_18vars.csv
+ls -l samsung_fire_master_23vars.csv
 
-head -n 5 samsung_fire_master_18vars.csv
+head -n 5 samsung_fire_master_23vars.csv
 
 - 삼성화재 파일(000810.html)이 없는 날:  8개
 - 삼성화재 파일이 정상적으로 존재하는 날: 583개
