@@ -65,7 +65,7 @@ fix_samsung_july.py
 
 ### 1-1. 전체 업종에 대한 csv파일 생성
 
-[extract_all_stocks.py]
+extract_all_stocks.py
 
 - stock_csv_results 폴더 안에 종목별로 수백 개의 CSV 파일 저장
 - /home/s202420495/stock_csv_results 폴더 안에 000810_history.csv, 005930_history.csv처럼 종목코드 이름표가 붙은 약 940여 개의 개별 파일이 생성
