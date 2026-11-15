@@ -84,7 +84,6 @@ fix_samsung_july.py
 
 - 우선주, ETF, 스팩을 제외
 - 코스피만 있는 초반보다 모든 업종이 어느정도 다 들어왔을 때(24년 4월 15일)를 기분으로 첫 시가총액 순위를 봄
-- 
 
 [emerging_climbers_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/emerging_climbers_jump.png "emerging_climbers_jump.png")
 
@@ -92,5 +91,6 @@ fix_samsung_july.py
 
 - 새로 들어온 종목은 어느 업종: SK스퀘어, 한화에어로스페이스, 두산에너빌리티, KB금융
 - 방산·조선·전력설비 계열(기계·중공업), 증권(가장 많이 올라 20위권에 들어옴) 업종이 커다란 폭으로 상승
+- 액면분할 확인
 
 ### 2-2. 업종 간 수익률의 차이는 2년 반 동안 벌어졌는가, 좁혀졌는가. 몇 개 업종이 그 차이를 만들었는가.
