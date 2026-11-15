@@ -64,10 +64,18 @@ fix_samsung_july.py
 ## 1. 전체 업종 csv파일로 압축
 
 **전체 업종에 대한 csv파일 생성**
+
 [extract_all_stocks.py](https://github.com/choi1618-del/2026-2-/blob/mainextract_all_stocks.py "extract_all_stocks.py")
 
 - stock_csv_results 폴더 안에 종목별로 수백 개의 CSV 파일 저장
 - /home/s202420495/stock_csv_results 폴더 안에 000810_history.csv, 005930_history.csv처럼 종목코드 이름표가 붙은 약 940여 개의 개별 파일 생성
 
 **전체 업종 2025년 7월 결측치 이어붙이기(최종 csv 파일)**
+
 [update_july_inplace.py]
+
+---
+
+## 2. 질문에 대한 답
+
+### 2-1. 시가총액 순위는 2년 반 동안 얼마나 바뀌었는가. 2년 반 전 상위 종목 중 지금도 상위인 것은 무엇이고, 새로 들어온 종목은 어느 업종인가.
