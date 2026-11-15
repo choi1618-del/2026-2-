@@ -82,6 +82,10 @@ fix_samsung_july.py
 
 [analyze_q1_exact_2years.py]
 
+- 우선주, ETF, 스팩을 제외
+- 코스피만 있는 초반보다 모든 업종이 어느정도 다 들어왔을 때(24년 4월 15일)를 기분으로 첫 시가총액 순위를 봄
+- 
+
 [emerging_climbers_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/emerging_climbers_jump.png "emerging_climbers_jump.png")
 
 [top10_rank_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/top10_rank_jump.png "top10_rank_jump.png")
