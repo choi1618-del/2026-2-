@@ -81,7 +81,7 @@ fix_samsung_july.py
 ### 2-1. 시가총액 순위는 2년 반 동안 얼마나 바뀌었는가. 2년 반 전 상위 종목 중 지금도 상위인 것은 무엇이고, 새로 들어온 종목은 어느 업종인가.
 
 [코드]
-[emerging_climbers_jump.png]
-[top10_rank_jump.png]
+[emerging_climbers_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/emerging_climbers_jump.png "emerging_climbers_jump.png")
+[top10_rank_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/top10_rank_jump.png "top10_rank_jump.png")
 
 - 
