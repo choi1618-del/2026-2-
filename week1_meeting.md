@@ -94,3 +94,11 @@ fix_samsung_july.py
 - 액면분할 확인
 
 ### 2-2. 업종 간 수익률의 차이는 2년 반 동안 벌어졌는가, 좁혀졌는가. 몇 개 업종이 그 차이를 만들었는가.
+
+[analyze_q2_official.py]
+
+- 업종이 어디 속해있는지 종목별로 구분함
+- 순수 보통주의 공식 업종 매핑표('sector_map.csv') 생성
+
+[q2_sector_divergence.png](https://github.com/choi1618-del/2026-2-/blob/main/q2_sector_divergence.png "q2_sector_divergence.png")
+[q2_top_sectors.png](https://github.com/choi1618-del/2026-2-/blob/main/q2_top_sectors.png "q2_top_sectors.png")
