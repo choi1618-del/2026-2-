@@ -81,7 +81,10 @@ fix_samsung_july.py
 ### 2-1. 시가총액 순위는 2년 반 동안 얼마나 바뀌었는가. 2년 반 전 상위 종목 중 지금도 상위인 것은 무엇이고, 새로 들어온 종목은 어느 업종인가.
 
 [코드]
+
 [emerging_climbers_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/emerging_climbers_jump.png "emerging_climbers_jump.png")
+
 [top10_rank_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/top10_rank_jump.png "top10_rank_jump.png")
 
-- 
+- 새로 들어온 종목은 어느 업종: SK스퀘어, 한화에어로스페이스, 두산에너빌리티, KB금융
+- 방산·조선·전력설비 계열(기계·중공업), 증권(가장 많이 올라 20위권에 들어옴) 업종이 커다란 폭으로 상승
