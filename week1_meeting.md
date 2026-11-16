@@ -114,6 +114,8 @@ fix_samsung_july.py
 | 9 | 기아 | 000270 | 6 |
 | 10 | KB금융 | 105560 | 13 |
 
+[top10_rank_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/top10_rank_jump.png "top10_rank_jump.png")
+
 [2026년 TOP 20 중 2년 전(2024년) 20위 밖에서 치고 올라온 신흥 강자들]
 
 | 종료 순위 | 시작 순위 | 종목명 | 종목코드 |
@@ -128,8 +130,6 @@ fix_samsung_july.py
 | 20 | 50 | HD현대일렉트릭 | 267260 |
 
 [emerging_climbers_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/emerging_climbers_jump.png "emerging_climbers_jump.png")
-
-[top10_rank_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/top10_rank_jump.png "top10_rank_jump.png")
 
 - 새로 들어온 종목은 어느 업종: SK스퀘어, 한화에어로스페이스, 두산에너빌리티, KB금융
 - 방산·조선·전력설비 계열(기계·중공업), 증권(가장 많이 올라 20위권에 들어옴) 업종이 커다란 폭으로 상승
