@@ -85,6 +85,20 @@ fix_samsung_july.py
 - 우선주, ETF, 스팩을 제외
 - 코스피만 있는 초반보다 모든 업종이 어느정도 다 들어왔을 때(24년 4월 15일)를 기분으로 첫 시가총액 순위를 봄
 
+2년 전(2024-04-15) 시가총액 TOP 10 보통주 현황
+| 시작 순위 | 종목명 | 종목코드 | 종료 순위 |
+|---|---|---|---|
+| 1 | 삼성전자 | 005930 | 1 |
+| 2 | SK하이닉스 | 000660 | 2 |
+| 3 | LG에너지솔루션 | 373220 | 4 |
+| 4 | 삼성바이오로직스 | 207940 | 7 |
+| 5 | 현대차 | 005380 | 3 |
+| 6 | 기아 | 000270 | 9 |
+| 7 | 셀트리온 | 068270 | 16 |
+| 8 | POSCO홀딩스 | 005490 | 25 |
+| 9 | NAVER | 035420 | 24 |
+| 10 | LG화학 | 051910 | 33 |
+
 [emerging_climbers_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/emerging_climbers_jump.png "emerging_climbers_jump.png")
 
 [top10_rank_jump.png](https://github.com/choi1618-del/2026-2-/blob/main/top10_rank_jump.png "top10_rank_jump.png")
