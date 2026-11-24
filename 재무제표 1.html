@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>재무제표 질문 3-1: 영업이익률이 높은 업종이 주가 수익률도 높았는가?</title>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif; margin: 0; background: #f8fafc; color: #0f172a; line-height: 1.65; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 23px; margin: 0 0 6px 0; color: #0f172a; }
+    h2 { font-size: 16px; margin: 0 0 12px 0; color: #1e3a8a; border-bottom: 2px solid #dbeafe; padding-bottom: 6px; }
+    .subtitle { color: #475569; font-size: 14px; margin-bottom: 20px; }
+    .section-card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .def-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
+    .def-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; }
+    .def-box strong { color: #1e40af; display: block; margin-bottom: 6px; font-size: 14px; }
+    .formula-box { background: #fff; border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 8px 0; font-size: 13px; overflow-x: auto; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .ctrl-group label { display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; }
+    select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; background: #fff; }
+    .verdict-box { background: #eff6ff; border-left: 5px solid #2563eb; padding: 16px 20px; border-radius: 8px; margin-bottom: 20px; }
+    .verdict-title { font-weight: 700; font-size: 15px; color: #1e40af; margin-bottom: 6px; }
+    .verdict-text { font-size: 14px; color: #1e293b; }
+    .card { background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .charts-row { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 980px) { .charts-row { grid-template-columns: 1fr; } }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: center; }
+    th { background: #f1f5f9; font-weight: 700; color: #1e293b; }
+    .highlight-row { background: #eff6ff; font-weight: 700; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>재무제표 질문 3-1: 영업이익률이 높은 업종이 주가 수익률도 높았는가?</h1>
+  <div class="subtitle">분석 기간: 2024-04-15 ~ 2026-09-02 (총 576거래일) | 분석 대상: 78개 업종 | 주 기준: 업종 내 종목 영업이익률 중앙값 &amp; 시가총액 가중 복리 누적수익률</div>
+
+  <!-- 1. 핵심 변수 정의 및 산출 수식 -->
+  <div class="section-card">
+    <h2>1. 핵심 변수 정의, 수정주가 보정 및 산출 수식</h2>
+    <div class="def-grid">
+      <div class="def-box">
+        <strong>① 업종별 영업이익률 ($\text{OPM}$): 중앙값(주 기준) vs 시총가중</strong>
+        매출이 거의 없어 영업이익률이 튀는 극단적 적자 종목을 인위적으로 잘라내지 않고도 업종 내 평범한 기업의 수익성을 왜곡 없이 나타내기 위해 <b>업종 내 유효 종목 전일 영업이익률의 중앙값</b>을 주 기준으로 채택하고, 시가총액 가중평균을 보조 비교한다.
+        <div class="formula-box">
+          • <b>주 기준(중앙값):</b> $\text{OPM}^{\text{med}}_{s,t} = \text{Median}_{i \in N_{s,t}}(\text{OPM}_{i,t-1})$<br/>
+          • <b>비교용(시총가중):</b> $\text{OPM}^{\text{vw}}_{s,t} = \sum_{i \in N_{s,t}} w_{i,t-1} \text{OPM}_{i,t-1}$<br/>
+          • <b>기간 평균 및 변화폭:</b> $\overline{\text{OPM}}_s = \frac{1}{T}\sum_{t=1}^{T} \text{OPM}_{s,t}, \quad \Delta \text{OPM}_s = \text{OPM}_{s,\text{end}} - \text{OPM}_{s,\text{start}}$
+        </div>
+      </div>
+
+      <div class="def-box">
+        <strong>② 수정주가 일별 수익률 ($r_{i,t}$) 및 시총가중 복리 누적 ($\text{CumRet}_s$)</strong>
+        액면분할·병합·무상감자로 인한 가격 단절을 막기 위해 상장주식수($S_{i,t} = \text{MCap}_{i,t} \div P_{i,t}$) 변동 비율을 보정한 수정주가 수익률을 사용하고, 일별 수익률 $\pm 50\%$ 초과 이상일은 제외한다.
+        <div class="formula-box">
+          $$r_{i,t} = \frac{P_{i,t}}{P_{i,t-1}} \cdot \frac{S_{i,t}}{S_{i,t-1}} - 1, \quad \left(S_{i,t} = \frac{\text{시가총액}_{i,t}}{P_{i,t}}\right)$$
+          $$R^{\text{vw}}_{s,t} = \sum_{i \in N_{s,t}} w_{i,t-1} r_{i,t}, \quad \text{CumRet}^{\text{vw}}_s = \prod_{t=1}^{T} (1 + R^{\text{vw}}_{s,t}) - 1$$
+        </div>
+        • 시가총액 가중 일별 복리 누적 방식을 통해 기간 양 끝 단순 비교 시 발생하는 <b>생존 편향(상장폐지 제외 왜곡)</b>과 신규 상장·유상증자 효과를 제거한다.
+      </div>
+
+      <div class="def-box">
+        <strong>③ 3가지 세부 질문과 1:1 대응 그래프 구성</strong>
+        • <b>그래프 1 (산점도):</b> 업종별 영업이익률과 누적 수익률의 전체 방향성 ($\rho$ 검증)<br/>
+        • <b>그래프 2 (그룹 막대):</b> 동일 업종 내부에서도 고이익률 종목이 저이익률 종목을 앞서는지 검증<br/>
+        • <b>그래프 3 (2×2 히트맵):</b> 기초 이익률이 원래 높았던 업종 vs 기간 중 이익률이 개선된 업종 교차 검증
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 인터랙티브 컨트롤 및 핵심 결론 -->
+  <div class="controls">
+    <div class="ctrl-group">
+      <label>1. 강조할 업종 선택</label>
+      <select id="sel-sector">
+        <option value="ALL">전체 업종 종합 (78개 업종)</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>2. 그래프 1 X축 영업이익률 기준 선택</label>
+      <select id="sel-x">
+        <option value="opm_med">기간 평균 영업이익률 중앙값 (%, 주 기준)</option>
+        <option value="opm_start">분석 시작 시점(기초) 영업이익률 (%)</option>
+        <option value="opm_chg">기간 중 영업이익률 변화폭 (%p)</option>
+        <option value="opm_vw">기간 평균 시가총액 가중 영업이익률 (%)</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>3. 그래프 1 Y축 주가 수익률 기준 선택</label>
+      <select id="sel-y">
+        <option value="vw_cum">시가총액 가중 누적수익률 (%, 주 기준)</option>
+        <option value="ew_cum">동일가중 누적수익률 (%, 비교용)</option>
+        <option value="simple_ret">양끝단순 비교 수익률 (%, 생존편향 참고)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="verdict-box">
+    <div class="verdict-title">실증 분석 핵심 결론 및 선택 업종 진단</div>
+    <div class="verdict-text" id="verdict-text"></div>
+  </div>
+
+  <!-- 3. 핵심 시각화 3종 (세부 질문 1, 2, 3과 1:1 매칭) -->
+  <div class="card">
+    <div id="chart-scatter" style="height:420px;"></div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card" style="margin-bottom:0;"><div id="chart-within" style="height:400px;"></div></div>
+    <div class="card" style="margin-bottom:0;"><div id="chart-heatmap" style="height:400px;"></div></div>
+  </div>
+
+  <!-- 4. 6가지 계산 방법 비교 테이블 -->
+  <div class="section-card">
+    <h2>2. 영업이익률 및 수익률 정의 변경에 따른 강건성 비교표 (Q5 상위 20% vs Q1 하위 20%)</h2>
+    <table id="method-table">
+      <thead>
+        <tr>
+          <th>영업이익률 기준</th>
+          <th>수익률 기준</th>
+          <th>Q5 상위 20% (%)</th>
+          <th>Q1 하위 20% (%)</th>
+          <th>수익률 격차 (%p)</th>
+          <th>피어슨 상관계수 (r)</th>
+          <th>스피어만 상관계수 (ρ)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const DATA = {"start": "2024-04-15", "end": "2026-09-02", "n_days": 576, "n_sectors": 78, "methods": [{"opm_method": "업종 중앙값 OPM", "ret_method": "시가총액 가중 누적수익률", "q5": 60.71, "q1": -9.42, "diff": 70.12, "r": 0.04, "p_r": 0.7263, "rho": 0.382, "p_rho": 0.0006}, {"opm_method": "업종 중앙값 OPM", "ret_method": "동일가중 누적수익률", "q5": 32.83, "q1": -9.12, "diff": 41.94, "r": 0.13, "p_r": 0.2583, "rho": 0.422, "p_rho": 0.0001}, {"opm_method": "업종 중앙값 OPM", "ret_method": "양끝단순(생존편향)", "q5": 24.94, "q1": -7.75, "diff": 32.69, "r": 0.08, "p_r": 0.4888, "rho": 0.355, "p_rho": 0.0014}, {"opm_method": "시가총액 가중 OPM", "ret_method": "시가총액 가중 누적수익률", "q5": 72.12, "q1": 15.71, "diff": 56.41, "r": -0.042, "p_r": 0.7126, "rho": 0.326, "p_rho": 0.0036}, {"opm_method": "시가총액 가중 OPM", "ret_method": "동일가중 누적수익률", "q5": 31.94, "q1": -0.43, "diff": 32.37, "r": -0.045, "p_r": 0.6964, "rho": 0.271, "p_rho": 0.0162}, {"opm_method": "시가총액 가중 OPM", "ret_method": "양끝단순(생존편향)", "q5": 28.01, "q1": 8.9, "diff": 19.11, "r": -0.045, "p_r": 0.6927, "rho": 0.155, "p_rho": 0.1751}], "sectors": [{"sector": "창업투자", "n_stocks": 60, "opm_med": 29.82, "opm_vw": 26.11, "opm_start": 31.99, "opm_end": 27.72, "opm_chg": -4.27, "vw_cum": 6.82, "ew_cum": 11.96, "simple_ret": 0.96, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "다각화된소비자서비스", "n_stocks": 1, "opm_med": 21.92, "opm_vw": 21.92, "opm_start": 16.22, "opm_end": 31.23, "opm_chg": 15.01, "vw_cum": 33.89, "ew_cum": 33.89, "simple_ret": 33.15, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "담배", "n_stocks": 1, "opm_med": 20.2, "opm_vw": 20.2, "opm_start": 20.84, "opm_end": 25.54, "opm_chg": 4.7, "vw_cum": 47.91, "ew_cum": 47.91, "simple_ret": 55.05, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "카드", "n_stocks": 1, "opm_med": 19.73, "opm_vw": 19.73, "opm_start": 19.75, "opm_end": 18.61, "opm_chg": -1.14, "vw_cum": 25.26, "ew_cum": 25.26, "simple_ret": 27.35, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "기타금융", "n_stocks": 5, "opm_med": 11.12, "opm_vw": 10.01, "opm_start": 16.18, "opm_end": 19.27, "opm_chg": 3.09, "vw_cum": 3.1, "ew_cum": 8.91, "simple_ret": -10.47, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "운송인프라", "n_stocks": 6, "opm_med": 10.98, "opm_vw": 14.21, "opm_start": 4.16, "opm_end": 12.85, "opm_chg": 8.69, "vw_cum": 43.21, "ew_cum": 57.35, "simple_ret": 33.18, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "은행", "n_stocks": 10, "opm_med": 10.8, "opm_vw": 12.13, "opm_start": 3.1, "opm_end": 8.91, "opm_chg": 5.81, "vw_cum": 124.59, "ew_cum": 104.76, "simple_ret": 83.19, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "호텔,레스토랑,레저", "n_stocks": 19, "opm_med": 10.13, "opm_vw": 13.51, "opm_start": 5.63, "opm_end": 12.27, "opm_chg": 6.64, "vw_cum": -11.99, "ew_cum": -6.14, "simple_ret": -8.52, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "전기유틸리티", "n_stocks": 5, "opm_med": 9.41, "opm_vw": 11.74, "opm_start": 8.1, "opm_end": 11.5, "opm_chg": 3.4, "vw_cum": 56.14, "ew_cum": 41.88, "simple_ret": 32.07, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "해운사", "n_stocks": 11, "opm_med": 9.11, "opm_vw": 16.41, "opm_start": 8.57, "opm_end": 6.29, "opm_chg": -2.28, "vw_cum": 73.77, "ew_cum": 26.24, "simple_ret": -2.34, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "조선", "n_stocks": 28, "opm_med": 8.92, "opm_vw": 9.44, "opm_start": 2.91, "opm_end": 15.08, "opm_chg": 12.17, "vw_cum": 185.68, "ew_cum": 51.37, "simple_ret": 66.6, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "손해보험", "n_stocks": 10, "opm_med": 7.46, "opm_vw": 10.31, "opm_start": 2.44, "opm_end": 6.69, "opm_chg": 4.24, "vw_cum": 107.87, "ew_cum": 107.2, "simple_ret": 83.71, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "식품과기본식료품소매", "n_stocks": 6, "opm_med": 7.07, "opm_vw": 3.86, "opm_start": 7.94, "opm_end": 5.34, "opm_chg": -2.6, "vw_cum": -8.78, "ew_cum": -6.42, "simple_ret": -10.5, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "양방향미디어와서비스", "n_stocks": 15, "opm_med": 6.56, "opm_vw": 14.35, "opm_start": 6.54, "opm_end": 13.47, "opm_chg": 6.93, "vw_cum": -6.88, "ew_cum": -3.16, "simple_ret": 0.64, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "반도체와반도체장비", "n_stocks": 162, "opm_med": 6.11, "opm_vw": 46.67, "opm_start": 6.99, "opm_end": 12.37, "opm_chg": 5.38, "vw_cum": 310.39, "ew_cum": 42.01, "simple_ret": 37.71, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "음료", "n_stocks": 12, "opm_med": 6.05, "opm_vw": 6.34, "opm_start": 6.78, "opm_end": 7.1, "opm_chg": 0.32, "vw_cum": -19.68, "ew_cum": -17.82, "simple_ret": -22.69, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "상업서비스와공급품", "n_stocks": 29, "opm_med": 6.04, "opm_vw": 9.39, "opm_start": 1.26, "opm_end": 10.2, "opm_chg": 8.94, "vw_cum": 2.96, "ew_cum": -5.75, "simple_ret": 21.66, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "복합유틸리티", "n_stocks": 1, "opm_med": 6.02, "opm_vw": 6.02, "opm_start": 11.4, "opm_end": 6.9, "opm_chg": -4.5, "vw_cum": 101.12, "ew_cum": 101.12, "simple_ret": 93.5, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "무선통신서비스", "n_stocks": 4, "opm_med": 6.0, "opm_vw": 8.03, "opm_start": 6.84, "opm_end": 7.59, "opm_chg": 0.75, "vw_cum": 62.43, "ew_cum": -5.48, "simple_ret": 1.79, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "전기장비", "n_stocks": 31, "opm_med": 5.93, "opm_vw": 12.9, "opm_start": 3.55, "opm_end": 5.14, "opm_chg": 1.59, "vw_cum": 319.68, "ew_cum": 161.28, "simple_ret": 175.97, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "부동산", "n_stocks": 7, "opm_med": 5.67, "opm_vw": 11.31, "opm_start": 16.17, "opm_end": -4.15, "opm_chg": -20.32, "vw_cum": -15.57, "ew_cum": -8.01, "simple_ret": -16.49, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "화장품", "n_stocks": 57, "opm_med": 5.63, "opm_vw": -2.51, "opm_start": 5.97, "opm_end": 7.26, "opm_chg": 1.29, "vw_cum": 57.13, "ew_cum": 26.94, "simple_ret": 43.73, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "생명보험", "n_stocks": 4, "opm_med": 5.35, "opm_vw": 6.97, "opm_start": 3.75, "opm_end": 4.81, "opm_chg": 1.06, "vw_cum": 249.15, "ew_cum": 212.35, "simple_ret": 164.54, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "증권", "n_stocks": 27, "opm_med": 5.19, "opm_vw": 7.9, "opm_start": 0.61, "opm_end": 5.05, "opm_chg": 4.43, "vw_cum": 120.43, "ew_cum": 91.59, "simple_ret": 88.95, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "복합기업", "n_stocks": 13, "opm_med": 5.06, "opm_vw": 9.56, "opm_start": 4.78, "opm_end": 8.3, "opm_chg": 3.52, "vw_cum": 127.06, "ew_cum": 104.5, "simple_ret": 104.92, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "광고", "n_stocks": 16, "opm_med": 4.57, "opm_vw": 6.7, "opm_start": 5.83, "opm_end": 3.69, "opm_chg": -2.15, "vw_cum": -23.6, "ew_cum": -43.37, "simple_ret": -40.12, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "도로와철도운송", "n_stocks": 8, "opm_med": 4.53, "opm_vw": 6.6, "opm_start": -0.34, "opm_end": 6.47, "opm_chg": 6.81, "vw_cum": 36.72, "ew_cum": 91.09, "simple_ret": 66.57, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "우주항공과국방", "n_stocks": 26, "opm_med": 4.48, "opm_vw": -14.09, "opm_start": 6.32, "opm_end": 6.17, "opm_chg": -0.15, "vw_cum": 293.0, "ew_cum": 84.54, "simple_ret": 200.07, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "화학", "n_stocks": 114, "opm_med": 4.38, "opm_vw": 0.18, "opm_start": 2.52, "opm_end": 7.79, "opm_chg": 5.27, "vw_cum": -24.28, "ew_cum": 1.37, "simple_ret": 8.45, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "식품", "n_stocks": 78, "opm_med": 4.31, "opm_vw": 1.66, "opm_start": 4.19, "opm_end": 4.67, "opm_chg": 0.48, "vw_cum": 42.29, "ew_cum": 9.57, "simple_ret": 3.31, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "게임엔터테인먼트", "n_stocks": 33, "opm_med": 4.14, "opm_vw": 20.52, "opm_start": 21.0, "opm_end": 8.95, "opm_chg": -12.05, "vw_cum": -18.05, "ew_cum": -16.94, "simple_ret": -19.69, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "건강관리장비와용품", "n_stocks": 83, "opm_med": 3.83, "opm_vw": -61.16, "opm_start": 8.48, "opm_end": 6.1, "opm_chg": -2.38, "vw_cum": -34.97, "ew_cum": -14.02, "simple_ret": -20.63, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "가정용기기와용품", "n_stocks": 18, "opm_med": 3.69, "opm_vw": 12.07, "opm_start": 11.25, "opm_end": 6.21, "opm_chg": -5.04, "vw_cum": 9.24, "ew_cum": -27.81, "simple_ret": -29.96, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "자동차부품", "n_stocks": 146, "opm_med": 3.64, "opm_vw": 6.37, "opm_start": 3.59, "opm_end": 4.08, "opm_chg": 0.49, "vw_cum": 30.43, "ew_cum": -0.05, "simple_ret": 4.37, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "항공화물운송과물류", "n_stocks": 11, "opm_med": 3.62, "opm_vw": 6.05, "opm_start": 2.93, "opm_end": 3.7, "opm_chg": 0.77, "vw_cum": 77.15, "ew_cum": 6.79, "simple_ret": -1.57, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "인터넷과카탈로그소매", "n_stocks": 7, "opm_med": 3.61, "opm_vw": 13.79, "opm_start": 3.64, "opm_end": 3.6, "opm_chg": -0.04, "vw_cum": 129.56, "ew_cum": 13.69, "simple_ret": 32.31, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "항공사", "n_stocks": 7, "opm_med": 3.6, "opm_vw": 5.81, "opm_start": 13.98, "opm_end": -2.58, "opm_chg": -16.56, "vw_cum": 45.87, "ew_cum": -10.52, "simple_ret": 13.82, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "섬유,의류,신발,호화품", "n_stocks": 76, "opm_med": 3.56, "opm_vw": 10.26, "opm_start": 4.58, "opm_end": 4.64, "opm_chg": 0.06, "vw_cum": 2.76, "ew_cum": -7.79, "simple_ret": -15.99, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "비철금속", "n_stocks": 38, "opm_med": 3.44, "opm_vw": 7.13, "opm_start": 5.25, "opm_end": 4.72, "opm_chg": -0.53, "vw_cum": 91.46, "ew_cum": -0.26, "simple_ret": -15.28, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "백화점과일반상점", "n_stocks": 12, "opm_med": 3.38, "opm_vw": 4.46, "opm_start": 3.02, "opm_end": 5.78, "opm_chg": 2.76, "vw_cum": 36.39, "ew_cum": 44.55, "simple_ret": 25.02, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "사무용전자제품", "n_stocks": 1, "opm_med": 3.32, "opm_vw": 3.32, "opm_start": 3.59, "opm_end": -12.34, "opm_chg": -15.93, "vw_cum": 4.9, "ew_cum": 4.9, "simple_ret": 5.32, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "포장재", "n_stocks": 25, "opm_med": 3.26, "opm_vw": 4.53, "opm_start": 1.71, "opm_end": 4.71, "opm_chg": 3.0, "vw_cum": -20.52, "ew_cum": -5.38, "simple_ret": -12.43, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "교육서비스", "n_stocks": 22, "opm_med": 3.24, "opm_vw": 3.66, "opm_start": 0.65, "opm_end": 4.12, "opm_chg": 3.48, "vw_cum": -33.14, "ew_cum": -21.72, "simple_ret": -26.4, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "에너지장비및서비스", "n_stocks": 28, "opm_med": 3.23, "opm_vw": 2.28, "opm_start": 6.0, "opm_end": 5.89, "opm_chg": -0.1, "vw_cum": 50.65, "ew_cum": 44.3, "simple_ret": 53.61, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "건설", "n_stocks": 67, "opm_med": 2.91, "opm_vw": 2.91, "opm_start": 2.58, "opm_end": 3.71, "opm_chg": 1.12, "vw_cum": 99.15, "ew_cum": 31.89, "simple_ret": 42.96, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "자동차", "n_stocks": 9, "opm_med": 2.84, "opm_vw": 8.39, "opm_start": 2.53, "opm_end": 2.4, "opm_chg": -0.13, "vw_cum": 40.63, "ew_cum": -26.96, "simple_ret": -23.63, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "레저용장비와제품", "n_stocks": 11, "opm_med": 2.67, "opm_vw": 0.95, "opm_start": 7.33, "opm_end": 9.26, "opm_chg": 1.93, "vw_cum": -0.51, "ew_cum": 5.96, "simple_ret": 2.31, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "가스유틸리티", "n_stocks": 12, "opm_med": 2.6, "opm_vw": 4.43, "opm_start": 2.35, "opm_end": 1.9, "opm_chg": -0.45, "vw_cum": 44.27, "ew_cum": 27.99, "simple_ret": 16.08, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "무역회사와판매업체", "n_stocks": 7, "opm_med": 2.45, "opm_vw": 0.15, "opm_start": 2.61, "opm_end": 2.41, "opm_chg": -0.2, "vw_cum": 19.57, "ew_cum": 27.59, "simple_ret": 14.57, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "제약", "n_stocks": 152, "opm_med": 2.37, "opm_vw": 6073126.53, "opm_start": 2.21, "opm_end": 2.38, "opm_chg": 0.17, "vw_cum": 10.38, "ew_cum": -1.15, "simple_ret": -2.88, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "전기제품", "n_stocks": 64, "opm_med": 2.33, "opm_vw": -0.43, "opm_start": 1.89, "opm_end": 2.68, "opm_chg": 0.79, "vw_cum": -9.7, "ew_cum": -13.62, "simple_ret": 38.61, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "건축자재", "n_stocks": 42, "opm_med": 2.13, "opm_vw": 5.09, "opm_start": 3.61, "opm_end": 4.17, "opm_chg": 0.56, "vw_cum": 13.79, "ew_cum": 10.37, "simple_ret": 2.49, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "IT서비스", "n_stocks": 103, "opm_med": 2.11, "opm_vw": 2.63, "opm_start": 5.12, "opm_end": 2.73, "opm_chg": -2.39, "vw_cum": 21.95, "ew_cum": 1.1, "simple_ret": -4.31, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "컴퓨터와주변기기", "n_stocks": 21, "opm_med": 1.76, "opm_vw": 11.35, "opm_start": -12.95, "opm_end": 2.24, "opm_chg": 15.19, "vw_cum": -2.79, "ew_cum": 12.1, "simple_ret": 0.33, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "핸드셋", "n_stocks": 57, "opm_med": 1.73, "opm_vw": -8.96, "opm_start": 2.97, "opm_end": 0.99, "opm_chg": -1.98, "vw_cum": -30.18, "ew_cum": -13.46, "simple_ret": -17.49, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "철강", "n_stocks": 53, "opm_med": 1.73, "opm_vw": 3.1, "opm_start": 2.34, "opm_end": 2.85, "opm_chg": 0.51, "vw_cum": -18.07, "ew_cum": 5.29, "simple_ret": -10.39, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "전자제품", "n_stocks": 15, "opm_med": 1.69, "opm_vw": 3.36, "opm_start": 0.93, "opm_end": 2.71, "opm_chg": 1.78, "vw_cum": 21.24, "ew_cum": -23.88, "simple_ret": -24.92, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "전자장비와기기", "n_stocks": 94, "opm_med": 1.67, "opm_vw": 2.63, "opm_start": -0.68, "opm_end": 3.9, "opm_chg": 4.58, "vw_cum": 278.24, "ew_cum": 6.37, "simple_ret": 20.74, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "가정용품", "n_stocks": 9, "opm_med": 1.62, "opm_vw": -3.37, "opm_start": 4.12, "opm_end": 3.45, "opm_chg": -0.67, "vw_cum": -30.95, "ew_cum": -14.11, "simple_ret": -38.68, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "디스플레이장비및부품", "n_stocks": 64, "opm_med": 1.62, "opm_vw": 0.67, "opm_start": -31.88, "opm_end": 2.12, "opm_chg": 34.0, "vw_cum": -31.47, "ew_cum": -9.37, "simple_ret": -13.61, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "석유와가스", "n_stocks": 13, "opm_med": 1.51, "opm_vw": 3.89, "opm_start": 2.58, "opm_end": 0.82, "opm_chg": -1.77, "vw_cum": 115.31, "ew_cum": 39.33, "simple_ret": 53.05, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "기계", "n_stocks": 97, "opm_med": 1.15, "opm_vw": -8.44, "opm_start": 2.69, "opm_end": 2.32, "opm_chg": -0.36, "vw_cum": 130.41, "ew_cum": 34.13, "simple_ret": 42.06, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "다각화된통신서비스", "n_stocks": 2, "opm_med": 0.91, "opm_vw": 5.32, "opm_start": 7.63, "opm_end": 2.79, "opm_chg": -4.83, "vw_cum": 49.23, "ew_cum": 42.09, "simple_ret": 19.6, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "가구", "n_stocks": 11, "opm_med": 0.86, "opm_vw": 3.53, "opm_start": -0.05, "opm_end": -4.88, "opm_chg": -4.83, "vw_cum": -19.03, "ew_cum": -10.81, "simple_ret": -21.47, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "출판", "n_stocks": 8, "opm_med": 0.33, "opm_vw": 4.73, "opm_start": -5.86, "opm_end": 11.07, "opm_chg": 16.93, "vw_cum": -46.49, "ew_cum": -34.06, "simple_ret": -24.6, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "방송과엔터테인먼트", "n_stocks": 54, "opm_med": 0.03, "opm_vw": 7.24, "opm_start": 3.29, "opm_end": -1.46, "opm_chg": -4.76, "vw_cum": -30.63, "ew_cum": -40.78, "simple_ret": -46.42, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "종이와목재", "n_stocks": 12, "opm_med": -0.33, "opm_vw": -8.11, "opm_start": 1.97, "opm_end": 2.15, "opm_chg": 0.18, "vw_cum": -42.12, "ew_cum": -31.48, "simple_ret": -40.21, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "건축제품", "n_stocks": 10, "opm_med": -0.7, "opm_vw": 1.18, "opm_start": 2.07, "opm_end": -1.58, "opm_chg": -3.65, "vw_cum": -27.79, "ew_cum": -18.27, "simple_ret": -28.19, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "소프트웨어", "n_stocks": 70, "opm_med": -1.65, "opm_vw": -8.77, "opm_start": 16.06, "opm_end": 1.84, "opm_chg": -14.22, "vw_cum": -16.51, "ew_cum": -28.55, "simple_ret": -26.34, "level_grp": "원래 이익률 높음<br>(상위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "디스플레이패널", "n_stocks": 6, "opm_med": -1.69, "opm_vw": -3.02, "opm_start": -8.45, "opm_end": -1.01, "opm_chg": 7.44, "vw_cum": -3.52, "ew_cum": 16.53, "simple_ret": 0.78, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "판매업체", "n_stocks": 12, "opm_med": -3.43, "opm_vw": -139.1, "opm_start": -7.32, "opm_end": -1.04, "opm_chg": 6.28, "vw_cum": -28.65, "ew_cum": -15.55, "simple_ret": -18.03, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "문구류", "n_stocks": 1, "opm_med": -4.64, "opm_vw": -4.64, "opm_start": -2.87, "opm_end": -4.35, "opm_chg": -1.48, "vw_cum": -52.74, "ew_cum": -52.74, "simple_ret": -52.45, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "통신장비", "n_stocks": 50, "opm_med": -5.65, "opm_vw": -14.3, "opm_start": -196.02, "opm_end": -0.43, "opm_chg": 195.58, "vw_cum": 24.72, "ew_cum": 46.86, "simple_ret": 81.11, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "건강관리업체및서비스", "n_stocks": 27, "opm_med": -7.48, "opm_vw": -3071.14, "opm_start": 2.1, "opm_end": -3.77, "opm_chg": -5.87, "vw_cum": 8.25, "ew_cum": -2.48, "simple_ret": 1.84, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "건강관리기술", "n_stocks": 11, "opm_med": -7.86, "opm_vw": -127.26, "opm_start": 2.39, "opm_end": -21.29, "opm_chg": -23.68, "vw_cum": -27.08, "ew_cum": -1.74, "simple_ret": 3.74, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "전문소매", "n_stocks": 4, "opm_med": -12.24, "opm_vw": -15.86, "opm_start": -4.66, "opm_end": -41.5, "opm_chg": -36.84, "vw_cum": -43.11, "ew_cum": -24.58, "simple_ret": -46.58, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}, {"sector": "생명과학도구및서비스", "n_stocks": 37, "opm_med": -24.96, "opm_vw": -372.03, "opm_start": -13.32, "opm_end": -12.31, "opm_chg": 1.01, "vw_cum": 17.09, "ew_cum": -15.65, "simple_ret": 52.35, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 상승 (ΔOPM > 0)"}, {"sector": "생물공학", "n_stocks": 48, "opm_med": -97.19, "opm_vw": -1051.91, "opm_start": -47.24, "opm_end": -97.56, "opm_chg": -50.31, "vw_cum": 87.74, "ew_cum": 25.34, "simple_ret": 20.84, "level_grp": "원래 이익률 낮음<br>(하위 50%)", "chg_grp": "이익률 하락·정체 (ΔOPM ≤ 0)"}], "heatmap": {"x": ["이익률 하락·정체 (ΔOPM ≤ 0)", "이익률 상승 (ΔOPM > 0)"], "y": ["원래 이익률 낮음<br>(하위 50%)", "원래 이익률 높음<br>(상위 50%)"], "z": [[15.4, 35.27], [37.72, 71.59]], "text": [["<b>+15.40%</b><br>(14개 업종, 동일가중 -2.67%)", "<b>+35.27%</b><br>(25개 업종, 동일가중 +17.61%)"], ["<b>+37.72%</b><br>(20개 업종, 동일가중 +9.26%)", "<b>+71.59%</b><br>(19개 업종, 동일가중 +38.03%)"]]}, "within": {"total": 68, "win": 58, "pct": 85.3, "hi": 24.88, "lo": -5.35, "diff": 30.23, "rho": 0.339, "items": [{"label": "전체 평균 (68개 업종)", "hi": 24.88, "lo": -5.35}, {"label": "반도체와반도체장비 (162종목)", "hi": 90.44, "lo": -9.49}, {"label": "제약 (152종목)", "hi": -6.66, "lo": -1.68}, {"label": "자동차부품 (146종목)", "hi": 7.61, "lo": -25.81}, {"label": "화학 (114종목)", "hi": -2.85, "lo": -14.58}, {"label": "IT서비스 (103종목)", "hi": 17.65, "lo": -34.46}, {"label": "기계 (98종목)", "hi": 48.79, "lo": 4.95}, {"label": "전자장비와기기 (94종목)", "hi": 46.93, "lo": -2.72}]}};
+
+const selSec = document.getElementById('sel-sector');
+DATA.sectors.forEach(s => {
+  const o = document.createElement('option'); o.value = s.sector;
+  o.textContent = `${s.sector} (OPM 중앙값 ${s.opm_med}%, 시총가중수익률 ${s.vw_cum >= 0 ? '+' : ''}${s.vw_cum}%)`;
+  selSec.appendChild(o);
+});
+
+const tbody = document.querySelector('#method-table tbody');
+DATA.methods.forEach((m, idx) => {
+  const tr = document.createElement('tr');
+  if (idx === 0) tr.className = 'highlight-row';
+  tr.innerHTML = `
+    <td>${m.opm_method}</td>
+    <td>${m.ret_method}</td>
+    <td style="color:#dc2626; font-weight:700;">${m.q5 >= 0 ? '+' : ''}${m.q5.toFixed(2)}%</td>
+    <td style="color:#2563eb; font-weight:700;">${m.q1 >= 0 ? '+' : ''}${m.q1.toFixed(2)}%</td>
+    <td style="font-weight:700;">${m.diff >= 0 ? '+' : ''}${m.diff.toFixed(2)}%p</td>
+    <td>${m.r >= 0 ? '+' : ''}${m.r.toFixed(3)}</td>
+    <td>${m.rho >= 0 ? '+' : ''}${m.rho.toFixed(3)}</td>
+  `;
+  tbody.appendChild(tr);
+});
+
+function spearman(x, y) {
+  const rank = arr => {
+    const sorted = [...arr].map((v, i) => [v, i]).sort((a, b) => a[0] - b[0]);
+    const r = new Array(arr.length);
+    for (let i = 0; i < sorted.length; i++) r[sorted[i][1]] = i + 1;
+    return r;
+  };
+  const rx = rank(x), ry = rank(y), n = x.length;
+  let d2 = 0;
+  for (let i = 0; i < n; i++) d2 += Math.pow(rx[i] - ry[i], 2);
+  return 1 - (6 * d2) / (n * (n * n - 1));
+}
+
+function update() {
+  const secVal = selSec.value;
+  const xKey = document.getElementById('sel-x').value;
+  const yKey = document.getElementById('sel-y').value;
+
+  const mainM = DATA.methods[0];
+  if (secVal === 'ALL') {
+    document.getElementById('verdict-text').textContent =
+      `[세부질문 ①] 영업이익률 상위 20%(Q5) 업종은 평균 +${mainM.q5.toFixed(2)}% 수익을 낸 반면 하위 20%(Q1)은 ${mainM.q1.toFixed(2)}% 손실을 기록했습니다(격차 +${mainM.diff.toFixed(2)}%p, rho = +${mainM.rho.toFixed(3)}). [세부질문 ②] 동일 업종 내부에서도 ${DATA.within.total}개 중 ${DATA.within.win}개 업종(${DATA.within.pct}%)에서 고이익률 종목군이 우세했습니다(격차 +${DATA.within.diff.toFixed(2)}%p). [세부질문 ③] 원래 이익률이 높으면서 기간 중 이익률까지 개선된 업종이 압도적 최고 성과를 기록했습니다.`;
+  } else {
+    const cur = DATA.sectors.find(s => s.sector === secVal);
+    document.getElementById('verdict-text').textContent =
+      `[${cur.sector}] 업종(유효 ${cur.n_stocks}종목)의 기간 평균 영업이익률 중앙값은 ${cur.opm_med}%(기초 ${cur.opm_start}% → 기말 ${cur.opm_end}%, 변화폭 ${cur.opm_chg >= 0 ? '+' : ''}${cur.opm_chg}%p)이며, 시가총액 가중 누적수익률은 ${cur.vw_cum >= 0 ? '+' : ''}${cur.vw_cum}%(동일가중 ${cur.ew_cum >= 0 ? '+' : ''}${cur.ew_cum}%)입니다.`;
+  }
+
+  const xVals = DATA.sectors.map(s => s[xKey]);
+  const yVals = DATA.sectors.map(s => s[yKey]);
+  const curRho = spearman(xVals, yVals);
+
+  const labelTargets = new Set(['반도체와반도체장비', '조선', '은행', '담배', '창업투자', '운송인프라', '해운사', '생물공학', secVal]);
+  const xLabelMap = {
+    'opm_med': '기간 평균 영업이익률 중앙값 (%)',
+    'opm_start': '기초(시작 시점) 영업이익률 (%)',
+    'opm_chg': '기간 중 영업이익률 변화폭 (%p)',
+    'opm_vw': '기간 평균 시총가중 영업이익률 (%)'
+  };
+  const yLabelMap = {
+    'vw_cum': '시가총액 가중 누적수익률 (%)',
+    'ew_cum': '동일가중 누적수익률 (%)',
+    'simple_ret': '양끝단순 비교 수익률 (%)'
+  };
+
+  // 그래프 1: 세부 질문 ① (업종별 영업이익률 vs 누적 수익률)
+  Plotly.newPlot('chart-scatter', [{
+    x: xVals,
+    y: yVals,
+    text: DATA.sectors.map(s => labelTargets.has(s.sector) ? s.sector : ''),
+    hovertext: DATA.sectors.map(s => `${s.sector} | X: ${s[xKey]} | Y: ${s[yKey]}%`),
+    hoverinfo: 'text',
+    mode: 'markers+text',
+    type: 'scatter',
+    textposition: 'top center',
+    textfont: { size: 11 },
+    marker: {
+      size: DATA.sectors.map(s => s.sector === secVal ? 18 : 10),
+      color: DATA.sectors.map(s => s.sector === secVal ? '#dc2626' : (s[yKey] >= 0 ? '#2563eb' : '#64748b')),
+      line: { width: 1, color: '#0f172a' }
+    }
+  }], {
+    title: `그래프 1 [세부질문 ①]: 업종별 영업이익률(X) vs 누적수익률(Y) (Spearman rho = ${curRho >= 0 ? '+' : ''}${curRho.toFixed(3)})`,
+    xaxis: { title: xLabelMap[xKey] },
+    yaxis: { title: yLabelMap[yKey] },
+    margin: { t: 45, l: 55, r: 25, b: 45 }
+  }, { responsive: true });
+
+  // 그래프 2: 세부 질문 ② (동일 업종 내부 고이익률 vs 저이익률 종목군 수익률 비교)
+  const wItems = [...DATA.within.items].reverse();
+  Plotly.newPlot('chart-within', [
+    {
+      y: wItems.map(i => i.label),
+      x: wItems.map(i => i.hi),
+      type: 'bar',
+      orientation: 'h',
+      name: '업종 내 고이익률 종목군 (상위 50%)',
+      marker: { color: '#2563eb' }
+    },
+    {
+      y: wItems.map(i => i.label),
+      x: wItems.map(i => i.lo),
+      type: 'bar',
+      orientation: 'h',
+      name: '업종 내 저이익률 종목군 (하위 50%)',
+      marker: { color: '#94a3b8' }
+    }
+  ], {
+    title: `그래프 2 [세부질문 ②]: 업종 내부 고이익률 vs 저이익률 종목군 (${DATA.within.pct}% 업종 우세)`,
+    xaxis: { title: '종목군 평균 누적수익률 (%)' },
+    barmode: 'group',
+    margin: { t: 45, l: 165, r: 20, b: 45 },
+    legend: { orientation: 'h', y: -0.2 }
+  }, { responsive: true });
+
+  // 그래프 3: 세부 질문 ③ (원래 높았던 업종 vs 이익률이 올라간 업종 2x2 히트맵)
+  Plotly.newPlot('chart-heatmap', [{
+    z: DATA.heatmap.z,
+    x: DATA.heatmap.x,
+    y: DATA.heatmap.y,
+    text: DATA.heatmap.text,
+    texttemplate: '%{text}',
+    type: 'heatmap',
+    colorscale: 'Blues',
+    showscale: true
+  }], {
+    title: '그래프 3 [세부질문 ③]: 기초 수준 × 이익률 개선 교차 성과 (2×2)',
+    margin: { t: 45, l: 135, r: 20, b: 55 }
+  }, { responsive: true });
+}
+
+['sel-sector', 'sel-x', 'sel-y'].forEach(id => document.getElementById(id).addEventListener('change', update));
+update();
+</script>
+</body>
+</html>
