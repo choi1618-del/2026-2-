@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>재무제표 질문 3-3: 추정치는 어느 업종에서 가장 많이 빗나갔는가?</title>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif; margin: 0; background: #f8fafc; color: #0f172a; line-height: 1.65; }
+    .container { max-width: 1260px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 23px; margin: 0 0 6px 0; color: #0f172a; }
+    h2 { font-size: 16px; margin: 0 0 12px 0; color: #1e3a8a; border-bottom: 2px solid #dbeafe; padding-bottom: 6px; }
+    .subtitle { color: #475569; font-size: 14px; margin-bottom: 20px; }
+    .section-card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .def-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
+    .def-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; }
+    .def-box strong { color: #1e40af; display: block; margin-bottom: 6px; font-size: 14px; }
+    .formula-box { background: #fff; border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 8px 0; font-size: 13px; overflow-x: auto; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .ctrl-group label { display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; }
+    select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; background: #fff; }
+    .verdict-box { background: #eff6ff; border-left: 5px solid #2563eb; padding: 16px 20px; border-radius: 8px; margin-bottom: 20px; }
+    .verdict-title { font-weight: 700; font-size: 15px; color: #1e40af; margin-bottom: 6px; }
+    .verdict-text { font-size: 14px; color: #1e293b; }
+    .card { background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 950px) { .charts-row { grid-template-columns: 1fr; } }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border: 1px solid #e2e8f0; padding: 7px 10px; text-align: center; }
+    th { background: #f1f5f9; font-weight: 700; color: #1e293b; }
+    .highlight-row { background: #eff6ff; font-weight: 700; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>재무제표 질문 3-3: 추정치는 어느 업종에서 가장 많이 빗나갔는가?</h1>
+  <div class="subtitle">분석 기간: 2024-04-15 ~ 2026-09-02 | 유효 표본: 4,672건 (382종목, 41개 업종) | 제외 기준: 손익분기점(±10원 미만) &amp; 소수 업종(이벤트 10건 또는 종목 3개 미만) 제외</div>
+
+  <!-- 1. 핵심 변수 정의 및 산출 수식 -->
+  <div class="section-card">
+    <h2>1. 핵심 변수 정의, 선정 근거 및 표본 제외 기준</h2>
+    <div class="def-grid">
+      <div class="def-box">
+        <strong>① 실적 확정일 ($t=0$) 및 $60\text{거래일}$(약 3개월) 윈도우</strong>
+        확정 결산 항목(EPS, BPS, 영업이익률) 갱신일을 실적 확정일($t=0$)로 포착(25거래일 이내 연속 수정 시 첫 변경일만 채택)하고, 국내 상장사의 분기 실적 주기(약 3개월 = $60\text{거래일}$)에 맞춰 단일 분기 컨센서스 수정 경로를 역추적한다.
+        <div class="formula-box">
+          $$\text{Error}_i = \frac{\text{실제EPS}_i - \text{추정EPS}_{i,t-1}}{|\text{추정EPS}_{i,t-1}|} \times 100$$
+          • <b>오차 크기(중심위치):</b> $\text{Median}(|\text{Error}_i|)$, &nbsp; <b>분포 폭:</b> $\text{IQR} = Q_3 - Q_1$
+        </div>
+        • 분모 0 근접 기저효과 폭발 방지를 위해 $|\text{추정EPS}| &lt; 10\text{원}$ 및 $\pm 500\%$ 초과 극단치를 사전 제외한다.
+      </div>
+
+      <div class="def-box">
+        <strong>② 추정치 수정 경로 및 학습 가설 점검</strong>
+        발표 $60\text{거래일}$(약 90일) 전 초기 추정 대비 발표 직전($t-1$) 수정폭을 추적하여, <b>발표 전 추정치가 하향 수정될 때 최종 오차가 실제로 축소되는지</b> 검증한다.
+        <div class="formula-box">
+          $$\Delta \text{Rev}_i = \frac{\text{추정EPS}_{i,t-1} - \text{추정EPS}_{i,t-60}}{|\text{추정EPS}_{i,t-60}|} \times 100$$
+        </div>
+        • 추정EPS 미보유 종목, 유효 이벤트 $10\text{건}$ 미만 영세 업종, 종목 수 $3\text{개}$ 미만 소수 업종은 제외한다.
+      </div>
+
+      <div class="def-box">
+        <strong>③ 오차 방향 쏠림(빈도) 및 분기별 비독립성 통제</strong>
+        • 극단치 영향 없이 구조적 과대추정 여부를 증명하기 위해 백분율 오차가 기준치($-2\%$) 미만으로 떨어진 <b>하회 이벤트 빈도($\%$)</b>를 측정한다.<br/>
+        • 실적 발표가 특정 시즌(3·5·8·11월)에 몰려 이벤트 간 독립성이 깨지는 문제를 보완하기 위해 <b>연도-분기별</b>로 나누어 하회 우세 방향이 일관되게 유지되는지 검증한다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 인터랙티브 컨트롤 및 핵심 결론 -->
+  <div class="controls">
+    <div class="ctrl-group">
+      <label>1. 업종 선택 (상세 수정 경로 조회)</label>
+      <select id="sel-sector">
+        <option value="ALL">전체 업종 종합 (41개 업종)</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>2. 그래프 1 업종 순위 정렬 기준</label>
+      <select id="sel-sort">
+        <option value="abs_med">절대 오차 중앙값 높은 순 (가장 많이 빗나간 순)</option>
+        <option value="iqr">오차 분포 IQR 넓은 순 (예측 불확실성 큰 순)</option>
+        <option value="miss_pct">하회(Miss, 과대추정) 비율 높은 순</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="verdict-box">
+    <div class="verdict-title">실증 분석 핵심 결론 및 선택 업종 진단</div>
+    <div class="verdict-text" id="verdict-text"></div>
+  </div>
+
+  <!-- 3. 핵심 시각화 3종 (세부 질문 ①, ②, ③과 1:1 매칭) -->
+  <div class="card">
+    <div id="chart-rank" style="height:430px;"></div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card" style="margin-bottom:0;"><div id="chart-rev" style="height:390px;"></div></div>
+    <div class="card" style="margin-bottom:0;"><div id="chart-quarter" style="height:390px;"></div></div>
+  </div>
+
+  <!-- 4. 상세 검증 요약 표 (TOP 10 업종 & 임계값 민감도) -->
+  <div class="section-card">
+    <h2>2. 추정치가 가장 많이 빗나간 업종 TOP 10 상세 수치</h2>
+    <table id="top10-table">
+      <thead>
+        <tr>
+          <th>순위</th>
+          <th>업종명</th>
+          <th>이벤트 / 종목</th>
+          <th>절대오차 중앙값 (%)</th>
+          <th>오차분포 IQR (%p)</th>
+          <th>부호오차 중앙값 (%)</th>
+          <th>하회(Miss) 비율 (%)</th>
+          <th>상회(Beat) 비율 (%)</th>
+          <th>60일 수정폭 중앙값 (%)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section-card">
+    <h2>3. 중립 구간(Inline) 임계값 변화에 따른 쏠림(낙관 편향) 민감도 검증</h2>
+    <table id="sens-table">
+      <thead>
+        <tr>
+          <th>Inline 판정 임계값</th>
+          <th>하회(Miss, 과대추정)</th>
+          <th>부합(Inline)</th>
+          <th>상회(Beat, 과소추정)</th>
+          <th>방향 판정 중 하회(Miss) 비중</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const DATA = {"start": "2024-04-15", "end": "2026-09-02", "n_events": 4672, "n_stocks": 382, "n_sectors": 41, "n_excluded_no_ev": 16, "n_excluded_small": 21, "rev_days": ["t-60", "t-50", "t-40", "t-30", "t-20", "t-10", "t-5", "t-1"], "all_rev_med": [23.84, 24.24, 23.89, 25.14, 26.02, 25.94, 25.48, 25.25], "all_rev_abs_med": [30.69, 31.08, 30.77, 31.29, 32.61, 32.55, 32.26, 32.07], "learning": {"m60": 26.39, "m1": 27.03, "reduced_pct": 43.4, "rev_chg_med": 0.0, "down_pct": 40.7}, "sensitivity": [{"thresh": "±1%", "miss_cnt": 3749, "miss_pct": 80.2, "in_cnt": 88, "in_pct": 1.9, "beat_cnt": 835, "beat_pct": 17.9, "miss_share": 81.8}, {"thresh": "±2%", "miss_cnt": 3692, "miss_pct": 79.0, "in_cnt": 189, "in_pct": 4.0, "beat_cnt": 791, "beat_pct": 16.9, "miss_share": 82.4}, {"thresh": "±5%", "miss_cnt": 3498, "miss_pct": 74.9, "in_cnt": 478, "in_pct": 10.2, "beat_cnt": 696, "beat_pct": 14.9, "miss_share": 83.4}], "quarters": [{"분기": "2024Q3", "이벤트수": 519, "하회(Miss)비율(%)": 82.08, "부합(Inline)비율(%)": 2.5, "상회(Beat)비율(%)": 15.41, "부호오차_중앙값(%)": -21.17}, {"분기": "2024Q4", "이벤트수": 542, "하회(Miss)비율(%)": 78.78, "부합(Inline)비율(%)": 5.9, "상회(Beat)비율(%)": 15.31, "부호오차_중앙값(%)": -16.49}, {"분기": "2025Q1", "이벤트수": 539, "하회(Miss)비율(%)": 78.66, "부합(Inline)비율(%)": 3.53, "상회(Beat)비율(%)": 17.81, "부호오차_중앙값(%)": -17.74}, {"분기": "2025Q2", "이벤트수": 442, "하회(Miss)비율(%)": 80.77, "부합(Inline)비율(%)": 5.2, "상회(Beat)비율(%)": 14.03, "부호오차_중앙값(%)": -21.48}, {"분기": "2025Q3", "이벤트수": 409, "하회(Miss)비율(%)": 78.97, "부합(Inline)비율(%)": 4.65, "상회(Beat)비율(%)": 16.38, "부호오차_중앙값(%)": -20.93}, {"분기": "2025Q4", "이벤트수": 559, "하회(Miss)비율(%)": 73.17, "부합(Inline)비율(%)": 5.37, "상회(Beat)비율(%)": 21.47, "부호오차_중앙값(%)": -15.21}, {"분기": "2026Q1", "이벤트수": 552, "하회(Miss)비율(%)": 74.82, "부합(Inline)비율(%)": 4.17, "상회(Beat)비율(%)": 21.01, "부호오차_중앙값(%)": -19.7}, {"분기": "2026Q2", "이벤트수": 547, "하회(Miss)비율(%)": 84.28, "부합(Inline)비율(%)": 2.19, "상회(Beat)비율(%)": 13.53, "부호오차_중앙값(%)": -27.18}, {"분기": "2026Q3", "이벤트수": 563, "하회(Miss)비율(%)": 80.28, "부합(Inline)비율(%)": 3.2, "상회(Beat)비율(%)": 16.52, "부호오차_중앙값(%)": -24.94}], "q_over50": "9 / 9", "sectors": [{"sector": "백화점과일반상점", "n": 100, "n_stocks": 7, "abs_med": 78.23, "iqr": 105.01, "signed_med": -78.23, "miss_pct": 92.0, "beat_pct": 0.0, "rev_chg": -0.32, "down_pct": 49.0, "rev_med": [130.03, 131.33, 130.23, 133.38, 136.39, 133.94, 137.52, 137.29], "rev_abs_med": [130.03, 131.33, 130.23, 133.38, 136.39, 133.94, 137.52, 137.29]}, {"sector": "통신장비", "n": 23, "n_stocks": 4, "abs_med": 76.3, "iqr": 104.24, "signed_med": -76.3, "miss_pct": 91.3, "beat_pct": 8.7, "rev_chg": 6.19, "down_pct": 43.5, "rev_med": [46.73, 142.72, 129.18, 157.08, 120.85, 120.85, 91.35, 74.11], "rev_abs_med": [160.86, 159.56, 150.5, 157.08, 120.85, 120.85, 91.35, 74.11]}, {"sector": "방송과엔터테인먼트", "n": 142, "n_stocks": 12, "abs_med": 59.66, "iqr": 82.7, "signed_med": -56.86, "miss_pct": 82.4, "beat_pct": 13.4, "rev_chg": -14.53, "down_pct": 70.4, "rev_med": [68.53, 67.3, 63.28, 61.8, 60.45, 58.96, 57.34, 56.07], "rev_abs_med": [68.53, 67.51, 63.28, 62.15, 62.56, 60.45, 59.78, 58.72]}, {"sector": "철강", "n": 91, "n_stocks": 6, "abs_med": 56.99, "iqr": 74.27, "signed_med": -40.07, "miss_pct": 79.1, "beat_pct": 20.9, "rev_chg": -7.59, "down_pct": 58.2, "rev_med": [89.12, 81.26, 69.85, 80.0, 75.13, 67.92, 66.86, 66.86], "rev_abs_med": [89.12, 81.26, 69.85, 80.0, 75.13, 67.94, 67.92, 67.94]}, {"sector": "전기제품", "n": 97, "n_stocks": 10, "abs_med": 56.42, "iqr": 113.39, "signed_med": -33.92, "miss_pct": 69.1, "beat_pct": 30.9, "rev_chg": -21.04, "down_pct": 64.9, "rev_med": [43.85, 39.42, 35.87, 33.64, 32.59, 30.81, 32.51, 30.81], "rev_abs_med": [49.62, 48.38, 47.32, 44.94, 42.63, 44.94, 44.94, 45.26]}, {"sector": "석유와가스", "n": 53, "n_stocks": 4, "abs_med": 51.34, "iqr": 70.53, "signed_med": -47.25, "miss_pct": 83.0, "beat_pct": 17.0, "rev_chg": 1.37, "down_pct": 47.2, "rev_med": [65.75, 65.75, 54.74, 58.15, 60.52, 60.28, 60.28, 71.92], "rev_abs_med": [65.75, 65.75, 60.01, 64.99, 70.02, 79.87, 79.87, 79.87]}, {"sector": "복합기업", "n": 106, "n_stocks": 9, "abs_med": 40.84, "iqr": 67.27, "signed_med": -23.38, "miss_pct": 75.5, "beat_pct": 22.6, "rev_chg": 2.12, "down_pct": 39.6, "rev_med": [38.01, 33.16, 30.5, 33.38, 30.16, 31.18, 31.18, 30.52], "rev_abs_med": [63.69, 58.66, 53.6, 54.63, 48.8, 51.33, 51.3, 48.81]}, {"sector": "핸드셋", "n": 101, "n_stocks": 9, "abs_med": 38.79, "iqr": 92.37, "signed_med": -23.6, "miss_pct": 67.3, "beat_pct": 29.7, "rev_chg": 0.0, "down_pct": 29.7, "rev_med": [34.67, 34.67, 32.26, 31.13, 31.12, 32.26, 30.89, 30.89], "rev_abs_med": [51.22, 51.22, 51.15, 47.6, 46.12, 46.19, 46.12, 46.12]}, {"sector": "화학", "n": 279, "n_stocks": 23, "abs_med": 38.0, "iqr": 74.72, "signed_med": -31.49, "miss_pct": 85.7, "beat_pct": 12.2, "rev_chg": 0.0, "down_pct": 41.6, "rev_med": [47.69, 49.33, 42.6, 43.12, 44.37, 44.86, 44.31, 43.51], "rev_abs_med": [53.1, 51.94, 51.09, 49.91, 51.01, 49.98, 49.43, 49.19]}, {"sector": "전자장비와기기", "n": 169, "n_stocks": 13, "abs_med": 37.15, "iqr": 55.07, "signed_med": -29.8, "miss_pct": 79.3, "beat_pct": 17.2, "rev_chg": 0.0, "down_pct": 47.9, "rev_med": [32.26, 33.8, 33.31, 37.68, 42.04, 42.31, 42.04, 42.45], "rev_abs_med": [36.5, 41.04, 39.42, 44.18, 47.39, 49.22, 51.84, 52.54]}, {"sector": "조선", "n": 145, "n_stocks": 13, "abs_med": 34.07, "iqr": 40.01, "signed_med": -28.06, "miss_pct": 77.9, "beat_pct": 17.2, "rev_chg": 5.91, "down_pct": 29.0, "rev_med": [13.42, 17.25, 21.26, 31.88, 34.24, 37.0, 38.94, 39.01], "rev_abs_med": [31.24, 32.62, 36.01, 38.12, 39.39, 39.28, 40.76, 44.26]}, {"sector": "생물공학", "n": 40, "n_stocks": 4, "abs_med": 33.96, "iqr": 32.41, "signed_med": -24.34, "miss_pct": 90.0, "beat_pct": 7.5, "rev_chg": 0.0, "down_pct": 37.5, "rev_med": [25.3, 24.36, 25.49, 27.44, 27.42, 28.14, 28.14, 26.17], "rev_abs_med": [36.94, 30.29, 32.94, 40.14, 40.93, 43.93, 45.23, 40.14]}, {"sector": "게임엔터테인먼트", "n": 172, "n_stocks": 13, "abs_med": 33.52, "iqr": 70.46, "signed_med": -18.14, "miss_pct": 67.4, "beat_pct": 29.1, "rev_chg": 0.13, "down_pct": 41.9, "rev_med": [25.93, 29.22, 23.48, 23.8, 28.73, 27.42, 23.8, 22.18], "rev_abs_med": [41.74, 44.73, 39.41, 35.67, 36.59, 37.08, 35.26, 35.16]}, {"sector": "에너지장비및서비스", "n": 79, "n_stocks": 9, "abs_med": 32.49, "iqr": 54.76, "signed_med": -31.02, "miss_pct": 79.7, "beat_pct": 16.5, "rev_chg": -2.1, "down_pct": 53.2, "rev_med": [42.24, 39.86, 37.03, 42.42, 41.46, 38.74, 38.86, 38.86], "rev_abs_med": [50.22, 44.45, 42.17, 46.33, 45.5, 40.68, 39.68, 39.68]}, {"sector": "건설", "n": 128, "n_stocks": 12, "abs_med": 31.5, "iqr": 56.56, "signed_med": -27.0, "miss_pct": 75.0, "beat_pct": 21.1, "rev_chg": 0.2, "down_pct": 43.8, "rev_med": [33.28, 35.22, 29.13, 33.95, 36.96, 34.99, 34.99, 37.02], "rev_abs_med": [42.9, 42.94, 41.94, 42.26, 42.43, 42.04, 42.04, 42.5]}, {"sector": "섬유,의류,신발,호화품", "n": 160, "n_stocks": 12, "abs_med": 30.1, "iqr": 41.97, "signed_med": -25.93, "miss_pct": 83.8, "beat_pct": 10.6, "rev_chg": 0.0, "down_pct": 45.6, "rev_med": [39.49, 40.97, 41.11, 38.56, 37.77, 37.65, 35.01, 35.01], "rev_abs_med": [45.06, 44.11, 43.44, 42.25, 42.55, 39.4, 38.08, 39.23]}, {"sector": "반도체와반도체장비", "n": 479, "n_stocks": 38, "abs_med": 30.07, "iqr": 47.76, "signed_med": -25.05, "miss_pct": 78.5, "beat_pct": 18.0, "rev_chg": 0.0, "down_pct": 31.3, "rev_med": [23.65, 25.62, 26.84, 28.48, 30.18, 32.24, 32.9, 33.42], "rev_abs_med": [28.57, 30.12, 31.12, 32.44, 35.54, 37.91, 36.86, 38.99]}, {"sector": "기계", "n": 122, "n_stocks": 11, "abs_med": 28.89, "iqr": 50.48, "signed_med": -17.0, "miss_pct": 70.5, "beat_pct": 23.0, "rev_chg": 0.0, "down_pct": 35.2, "rev_med": [21.04, 21.6, 21.6, 21.07, 22.07, 22.05, 21.2, 20.49], "rev_abs_med": [32.62, 34.45, 33.36, 33.36, 33.63, 38.5, 36.85, 36.1]}, {"sector": "호텔,레스토랑,레저", "n": 125, "n_stocks": 10, "abs_med": 27.75, "iqr": 43.79, "signed_med": -23.09, "miss_pct": 71.2, "beat_pct": 24.8, "rev_chg": 0.0, "down_pct": 48.8, "rev_med": [28.35, 27.24, 24.31, 26.19, 26.54, 29.34, 29.26, 29.17], "rev_abs_med": [33.33, 32.92, 33.48, 32.92, 32.92, 33.9, 33.9, 32.92]}, {"sector": "제약", "n": 304, "n_stocks": 26, "abs_med": 27.32, "iqr": 44.83, "signed_med": -16.77, "miss_pct": 72.7, "beat_pct": 25.7, "rev_chg": 0.0, "down_pct": 31.6, "rev_med": [14.46, 15.22, 16.52, 16.8, 19.76, 19.89, 19.53, 19.84], "rev_abs_med": [29.76, 29.3, 27.18, 27.99, 29.74, 29.21, 29.08, 27.75]}, {"sector": "우주항공과국방", "n": 93, "n_stocks": 6, "abs_med": 25.72, "iqr": 33.13, "signed_med": -16.72, "miss_pct": 71.0, "beat_pct": 28.0, "rev_chg": 5.0, "down_pct": 34.4, "rev_med": [9.87, 13.43, 12.53, 13.61, 17.59, 17.48, 20.07, 20.07], "rev_abs_med": [19.2, 22.01, 23.88, 25.12, 27.46, 30.73, 32.16, 32.16]}, {"sector": "도로와철도운송", "n": 37, "n_stocks": 3, "abs_med": 24.33, "iqr": 16.33, "signed_med": -21.17, "miss_pct": 83.8, "beat_pct": 16.2, "rev_chg": -1.18, "down_pct": 56.8, "rev_med": [20.89, 25.24, 25.24, 25.24, 25.24, 23.25, 23.25, 23.25], "rev_abs_med": [25.48, 32.7, 29.07, 29.46, 31.66, 27.23, 27.23, 25.24]}, {"sector": "무역회사와판매업체", "n": 68, "n_stocks": 5, "abs_med": 23.87, "iqr": 30.09, "signed_med": -23.61, "miss_pct": 89.7, "beat_pct": 8.8, "rev_chg": 0.98, "down_pct": 45.6, "rev_med": [26.23, 27.18, 27.95, 27.2, 28.2, 29.5, 29.5, 30.91], "rev_abs_med": [26.23, 27.18, 27.95, 27.2, 28.2, 29.5, 30.51, 31.35]}, {"sector": "전기장비", "n": 133, "n_stocks": 10, "abs_med": 22.75, "iqr": 24.75, "signed_med": -22.36, "miss_pct": 94.7, "beat_pct": 3.0, "rev_chg": 0.0, "down_pct": 31.6, "rev_med": [23.75, 24.18, 24.62, 25.6, 27.92, 28.73, 27.73, 28.8], "rev_abs_med": [23.75, 24.18, 24.66, 25.6, 27.92, 28.73, 27.73, 28.8]}, {"sector": "해운사", "n": 45, "n_stocks": 3, "abs_med": 22.65, "iqr": 38.95, "signed_med": -15.61, "miss_pct": 66.7, "beat_pct": 28.9, "rev_chg": 2.73, "down_pct": 37.8, "rev_med": [13.48, 12.16, 13.65, 13.27, 16.5, 18.07, 18.07, 18.49], "rev_abs_med": [19.62, 18.8, 24.44, 24.22, 28.83, 28.28, 28.49, 28.09]}, {"sector": "건강관리장비와용품", "n": 148, "n_stocks": 13, "abs_med": 21.48, "iqr": 21.99, "signed_med": -18.18, "miss_pct": 85.1, "beat_pct": 12.2, "rev_chg": 0.0, "down_pct": 41.2, "rev_med": [20.71, 19.87, 20.57, 21.79, 23.17, 22.26, 21.8, 22.22], "rev_abs_med": [24.34, 23.06, 23.57, 24.02, 24.4, 23.18, 23.38, 23.45]}, {"sector": "건축자재", "n": 49, "n_stocks": 4, "abs_med": 21.47, "iqr": 50.9, "signed_med": -18.19, "miss_pct": 67.3, "beat_pct": 28.6, "rev_chg": 0.0, "down_pct": 28.6, "rev_med": [27.33, 27.33, 27.33, 27.33, 23.23, 22.82, 22.82, 22.24], "rev_abs_med": [49.91, 49.91, 47.25, 38.99, 30.38, 27.33, 27.33, 27.33]}, {"sector": "식품", "n": 154, "n_stocks": 12, "abs_med": 20.25, "iqr": 29.28, "signed_med": -13.86, "miss_pct": 83.8, "beat_pct": 11.7, "rev_chg": 0.0, "down_pct": 40.3, "rev_med": [16.62, 16.98, 16.66, 17.65, 17.16, 16.49, 16.39, 16.09], "rev_abs_med": [20.27, 21.06, 21.06, 21.01, 21.19, 20.85, 21.43, 21.34]}, {"sector": "화장품", "n": 170, "n_stocks": 12, "abs_med": 20.19, "iqr": 24.12, "signed_med": -18.28, "miss_pct": 84.7, "beat_pct": 12.9, "rev_chg": 0.0, "down_pct": 38.8, "rev_med": [23.91, 23.59, 23.8, 24.71, 23.46, 24.39, 23.81, 22.36], "rev_abs_med": [28.89, 28.07, 26.31, 28.05, 27.04, 27.95, 26.07, 25.3]}, {"sector": "항공사", "n": 57, "n_stocks": 4, "abs_med": 19.47, "iqr": 41.23, "signed_med": -9.55, "miss_pct": 59.6, "beat_pct": 29.8, "rev_chg": -7.76, "down_pct": 57.9, "rev_med": [29.48, 26.65, 21.92, 20.83, 21.66, 10.12, 10.55, 10.18], "rev_abs_med": [29.74, 27.3, 26.65, 24.12, 23.94, 21.92, 22.41, 20.83]}, {"sector": "자동차부품", "n": 201, "n_stocks": 15, "abs_med": 19.12, "iqr": 34.44, "signed_med": -16.54, "miss_pct": 80.6, "beat_pct": 14.4, "rev_chg": 0.0, "down_pct": 44.3, "rev_med": [24.1, 23.84, 21.56, 22.3, 22.66, 21.56, 19.39, 19.81], "rev_abs_med": [25.31, 25.08, 24.18, 24.1, 24.55, 23.41, 22.38, 22.52]}, {"sector": "IT서비스", "n": 117, "n_stocks": 9, "abs_med": 18.56, "iqr": 40.11, "signed_med": -18.56, "miss_pct": 87.2, "beat_pct": 9.4, "rev_chg": 0.0, "down_pct": 42.7, "rev_med": [25.92, 24.11, 22.84, 24.11, 22.49, 22.6, 21.72, 22.78], "rev_abs_med": [25.92, 24.11, 22.84, 24.11, 22.49, 22.6, 21.72, 22.78]}, {"sector": "디스플레이장비및부품", "n": 79, "n_stocks": 7, "abs_med": 16.45, "iqr": 33.19, "signed_med": -13.55, "miss_pct": 74.7, "beat_pct": 13.9, "rev_chg": 0.0, "down_pct": 25.3, "rev_med": [19.58, 17.54, 17.34, 17.02, 17.27, 17.27, 17.02, 15.68], "rev_abs_med": [20.55, 19.88, 19.7, 17.54, 19.88, 19.69, 19.58, 19.58]}, {"sector": "전기유틸리티", "n": 49, "n_stocks": 3, "abs_med": 14.12, "iqr": 20.72, "signed_med": -8.3, "miss_pct": 61.2, "beat_pct": 26.5, "rev_chg": 1.77, "down_pct": 36.7, "rev_med": [4.93, 5.8, 7.89, 7.74, 7.76, 9.18, 10.58, 9.05], "rev_abs_med": [15.5, 12.22, 12.61, 14.33, 14.01, 17.08, 16.53, 14.01]}, {"sector": "항공화물운송과물류", "n": 45, "n_stocks": 3, "abs_med": 13.73, "iqr": 16.76, "signed_med": -13.73, "miss_pct": 84.4, "beat_pct": 15.6, "rev_chg": 0.0, "down_pct": 42.2, "rev_med": [17.95, 17.48, 17.89, 17.19, 16.63, 16.63, 15.92, 15.92], "rev_abs_med": [17.95, 17.48, 17.89, 17.19, 16.63, 16.63, 15.92, 15.92]}, {"sector": "양방향미디어와서비스", "n": 67, "n_stocks": 4, "abs_med": 13.15, "iqr": 47.29, "signed_med": -11.38, "miss_pct": 79.1, "beat_pct": 9.0, "rev_chg": 0.33, "down_pct": 44.8, "rev_med": [11.98, 11.98, 12.27, 14.27, 15.13, 15.49, 15.52, 12.85], "rev_abs_med": [11.98, 11.98, 12.27, 14.27, 15.13, 16.96, 15.63, 15.14]}, {"sector": "광고", "n": 43, "n_stocks": 3, "abs_med": 10.6, "iqr": 14.0, "signed_med": -10.6, "miss_pct": 83.7, "beat_pct": 7.0, "rev_chg": -0.05, "down_pct": 48.8, "rev_med": [13.44, 13.44, 12.04, 11.86, 11.9, 11.86, 11.78, 11.86], "rev_abs_med": [13.44, 13.44, 12.04, 11.86, 11.9, 11.86, 11.78, 11.86]}, {"sector": "증권", "n": 50, "n_stocks": 6, "abs_med": 10.43, "iqr": 10.34, "signed_med": -10.43, "miss_pct": 90.0, "beat_pct": 4.0, "rev_chg": 8.29, "down_pct": 10.0, "rev_med": [2.82, 3.48, 5.06, 7.46, 8.07, 10.0, 11.19, 11.64], "rev_abs_med": [5.87, 6.69, 7.68, 8.41, 8.41, 10.0, 11.19, 11.64]}, {"sector": "은행", "n": 80, "n_stocks": 9, "abs_med": 8.17, "iqr": 7.92, "signed_med": -8.17, "miss_pct": 88.8, "beat_pct": 0.0, "rev_chg": 1.82, "down_pct": 22.5, "rev_med": [5.5, 5.3, 6.75, 7.48, 8.25, 8.8, 8.74, 8.89], "rev_abs_med": [5.5, 5.3, 6.75, 7.48, 8.25, 8.8, 8.74, 8.89]}, {"sector": "자동차", "n": 48, "n_stocks": 3, "abs_med": 8.1, "iqr": 12.19, "signed_med": -7.71, "miss_pct": 72.9, "beat_pct": 12.5, "rev_chg": -1.44, "down_pct": 54.2, "rev_med": [8.56, 8.68, 7.91, 8.91, 8.84, 8.36, 8.28, 8.35], "rev_abs_med": [8.9, 8.94, 8.13, 9.23, 9.04, 8.91, 8.95, 8.82]}, {"sector": "손해보험", "n": 24, "n_stocks": 3, "abs_med": 7.06, "iqr": 11.4, "signed_med": -6.32, "miss_pct": 70.8, "beat_pct": 20.8, "rev_chg": 1.31, "down_pct": 33.3, "rev_med": [6.11, 5.78, 5.99, 6.65, 6.63, 6.67, 6.74, 6.74], "rev_abs_med": [7.94, 7.95, 8.51, 10.03, 7.7, 7.79, 7.7, 7.59]}]};
+
+const selSec = document.getElementById('sel-sector');
+DATA.sectors.forEach(s => {
+  const o = document.createElement('option'); o.value = s.sector;
+  o.textContent = `${s.sector} (오차 중앙값 ${s.abs_med}%, IQR ${s.iqr}%p, ${s.n_stocks}종목/${s.n}건)`;
+  selSec.appendChild(o);
+});
+
+// TOP 10 테이블 채우기
+const top10Body = document.querySelector('#top10-table tbody');
+DATA.sectors.slice(0, 10).forEach((s, idx) => {
+  const tr = document.createElement('tr');
+  if (idx === 0) tr.className = 'highlight-row';
+  tr.innerHTML = `
+    <td>${idx + 1}</td>
+    <td>${s.sector}</td>
+    <td>${s.n}건 / ${s.n_stocks}종목</td>
+    <td style="color:#dc2626; font-weight:700;">${s.abs_med.toFixed(2)}%</td>
+    <td>${s.iqr.toFixed(2)}%p</td>
+    <td>${s.signed_med >= 0 ? '+' : ''}${s.signed_med.toFixed(2)}%</td>
+    <td style="color:#2563eb; font-weight:600;">${s.miss_pct.toFixed(1)}%</td>
+    <td>${s.beat_pct.toFixed(1)}%</td>
+    <td>${s.rev_chg >= 0 ? '+' : ''}${s.rev_chg.toFixed(2)}%</td>
+  `;
+  top10Body.appendChild(tr);
+});
+
+// 민감도 테이블 채우기
+const sensBody = document.querySelector('#sens-table tbody');
+DATA.sensitivity.forEach((r, idx) => {
+  const tr = document.createElement('tr');
+  if (idx === 1) tr.className = 'highlight-row';
+  tr.innerHTML = `
+    <td>${r.thresh}</td>
+    <td style="color:#2563eb; font-weight:700;">${r.miss_cnt.toLocaleString()}건 (${r.miss_pct}%)</td>
+    <td>${r.in_cnt.toLocaleString()}건 (${r.in_pct}%)</td>
+    <td style="color:#dc2626;">${r.beat_cnt.toLocaleString()}건 (${r.beat_pct}%)</td>
+    <td style="font-weight:700;">${r.miss_share}%</td>
+  `;
+  sensBody.appendChild(tr);
+});
+
+function update() {
+  const secVal = selSec.value;
+  const sortKey = document.getElementById('sel-sort').value;
+
+  const sorted = [...DATA.sectors].sort((a, b) => b[sortKey] - a[sortKey]);
+  const top15 = sorted.slice(0, 15).reverse();
+  const top1 = DATA.sectors[0];
+
+  if (secVal === 'ALL') {
+    document.getElementById('verdict-text').textContent =
+      `[세부질문 ①] 절대 오차율 중앙값 기준으로 추정치가 가장 많이 빗나간 업종은 [${top1.sector}](절대오차 중앙값 ${top1.abs_med}%, 분포 IQR ${top1.iqr}%p, 하회 비율 ${top1.miss_pct}%)입니다. [세부질문 ②] 발표 전 60거래일 동안 초기 절대오차 중앙값 ${DATA.learning.m60}%에서 발표 직전 ${DATA.learning.m1}%로 오차가 축소되며(${DATA.learning.reduced_pct}% 이벤트에서 오차 감소), 하향 수정(중앙값 ${DATA.learning.rev_chg_med}%)을 통해 실제치에 근접해 가는 학습 과정이 확인됩니다. [세부질문 ③] 비독립성을 통제한 분기별 검증에서도 ${DATA.q_over50}개 분기에서 하회(과대추정) 비율이 50%를 상회해 일관된 낙관 편향 쏠림이 나타납니다.`;
+  } else {
+    const cur = DATA.sectors.find(s => s.sector === secVal);
+    document.getElementById('verdict-text').textContent =
+      `[${cur.sector}] 업종(${cur.n_stocks}종목, 유효 ${cur.n}건)의 절대 오차율 중앙값은 ${cur.abs_med}%, 분포 폭(IQR)은 ${cur.iqr}%p, 부호 오차 중앙값은 ${cur.signed_med >= 0 ? '+' : ''}${cur.signed_med}%입니다. 발표 전 60거래일 수정폭 중앙값은 ${cur.rev_chg >= 0 ? '+' : ''}${cur.rev_chg}%(하향 수정 비율 ${cur.down_pct}%)이며, 최종 결과는 하회(Miss) ${cur.miss_pct}% vs 상회(Beat) ${cur.beat_pct}%입니다.`;
+  }
+
+  const sortLabelMap = {
+    'abs_med': '절대 오차 중앙값 (%)',
+    'iqr': '오차 분포 폭 IQR (%p)',
+    'miss_pct': '하회(Miss, 과대추정) 비율 (%)'
+  };
+
+  // 그래프 1: 세부질문 ① 업종별 추정 오차 순위 TOP 15
+  Plotly.newPlot('chart-rank', [{
+    x: top15.map(s => s[sortKey]),
+    y: top15.map(s => `${s.sector} (${s.n_stocks}종목)`),
+    type: 'bar',
+    orientation: 'h',
+    marker: { color: top15.map(s => s.sector === secVal ? '#dc2626' : '#2563eb') },
+    text: top15.map(s => s[sortKey] + (sortKey === 'iqr' ? '%p' : '%')),
+    textposition: 'outside'
+  }], {
+    title: `그래프 1 [세부질문 ①]: 업종별 추정 오차 순위 TOP 15 (${sortLabelMap[sortKey]})`,
+    xaxis: { title: sortLabelMap[sortKey] },
+    margin: { t: 45, l: 175, r: 60, b: 45 }
+  }, { responsive: true });
+
+  // 그래프 2: 세부질문 ② 발표 전 60거래일 수정 경로
+  const target = secVal === 'ALL' ? null : DATA.sectors.find(s => s.sector === secVal);
+  const revY = target ? target.rev_med : DATA.all_rev_med;
+  const revAbsY = target ? target.rev_abs_med : DATA.all_rev_abs_med;
+
+  Plotly.newPlot('chart-rev', [
+    { x: DATA.rev_days, y: revY, mode: 'lines+markers', name: '부호 괴리율 중앙값 (추정-실제, %)', line: { color: '#dc2626', width: 3 } },
+    { x: DATA.rev_days, y: revAbsY, mode: 'lines+markers', name: '절대 괴리율 중앙값 (|추정-실제|, %)', line: { color: '#475569', width: 2, dash: 'dot' } }
+  ], {
+    title: `그래프 2 [세부질문 ②]: ${secVal === 'ALL' ? '전체 시장' : '[' + secVal + ']'} 발표 전 60거래일 수정·수렴 경로`,
+    xaxis: { title: '실적 확정일(t=0) 이전 거래일' },
+    yaxis: { title: '확정 EPS 대비 괴리율 (%)', zeroline: true },
+    margin: { t: 45, l: 55, r: 20, b: 45 },
+    legend: { orientation: 'h', y: -0.22 }
+  }, { responsive: true });
+
+  // 그래프 3: 세부질문 ③ 분기별 쏠림 일관성 검증
+  Plotly.newPlot('chart-quarter', [
+    { x: DATA.quarters.map(q => q['분기']), y: DATA.quarters.map(q => q['하회(Miss)비율(%)']), type: 'bar', name: '하회(Miss, 과대추정) 비율(%)', marker: { color: '#2563eb' } },
+    { x: DATA.quarters.map(q => q['분기']), y: DATA.quarters.map(q => q['상회(Beat)비율(%)']), type: 'bar', name: '상회(Beat, 과소추정) 비율(%)', marker: { color: '#ef4444' } }
+  ], {
+    title: '그래프 3 [세부질문 ③]: 분기별(비독립성 통제) 쏠림 일관성 검증 (기준선 50%)',
+    xaxis: { title: '실적 발표 분기' },
+    yaxis: { title: '비율 (%)', range: [0, 100] },
+    barmode: 'group',
+    shapes: [{ type: 'line', x0: -0.5, x1: DATA.quarters.length - 0.5, y0: 50, y1: 50, line: { color: '#dc2626', width: 1.5, dash: 'dash' } }],
+    margin: { t: 45, l: 55, r: 20, b: 45 },
+    legend: { orientation: 'h', y: -0.22 }
+  }, { responsive: true });
+}
+
+['sel-sector', 'sel-sort'].forEach(id => document.getElementById(id).addEventListener('change', update));
+update();
+</script>
+</body>
+</html>
