@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>재무제표 질문 4: 부채비율이 높은 업종이 더 크게 흔들렸는가?</title>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif; margin: 0; background: #f8fafc; color: #0f172a; line-height: 1.6; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 23px; margin: 0 0 6px 0; color: #0f172a; }
+    h2 { font-size: 16px; margin: 0 0 12px 0; color: #1e3a8a; border-bottom: 2px solid #dbeafe; padding-bottom: 6px; }
+    .subtitle { color: #475569; font-size: 14px; margin-bottom: 20px; }
+    .section-card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .def-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
+    .def-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; }
+    .def-box strong { color: #1e40af; display: block; margin-bottom: 6px; font-size: 14px; }
+    .formula-box { background: #fff; border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 8px 0; font-size: 13px; overflow-x: auto; }
+    .excl-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+    .excl-table th, .excl-table td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; vertical-align: top; }
+    .excl-table th { background: #f1f5f9; width: 220px; color: #334155; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .ctrl-group label { display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; }
+    select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; background: #fff; }
+    .verdict-box { background: #eff6ff; border-left: 5px solid #2563eb; padding: 16px 20px; border-radius: 8px; margin-bottom: 20px; }
+    .verdict-title { font-weight: 700; font-size: 15px; color: #1e40af; margin-bottom: 6px; }
+    .verdict-text { font-size: 14px; color: #1e293b; }
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 950px) { .charts-grid { grid-template-columns: 1fr; } }
+    .card { background: #fff; padding: 14px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .sens-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .sens-table th, .sens-table td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: center; }
+    .sens-table th { background: #f1f5f9; font-weight: 700; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>재무제표 질문 4: 부채비율이 높은 업종이 더 크게 흔들렸는가?</h1>
+  <div class="subtitle">분석 기간: 2024-04-15 ~ 2026-09-02 (576거래일) | 최종 대상: 비금융 65개 업종 (2450종목, 분할·병합 보정 834건 적용)</div>
+
+  <!-- 1. 정의 및 수식 섹션 -->
+  <div class="section-card">
+    <h2>1. 핵심 변수 정의, 기업이벤트 보정 및 산출 수식</h2>
+    <div class="def-grid">
+      <div class="def-box">
+        <strong>① 분할·병합 보정 및 시총가중 업종 수익률 ($R_{s,t}$)</strong>
+        액면분할·병합·권리락으로 주가가 급변할 때 시장 지수가 왜곡되는 것을 막기 위해 주가 수익률($r_{i,t}$)과 시가총액 변화율($g^{\text{mcap}}_{i,t}$)이 $15\%\text{p}$ 이상 괴리된 날은 실질 시가총액 변화율로 보정한다. 이후 유효 종목 집합($N_{s,t}$)의 <b>전일($t-1$) 시총 비중</b>으로 가중한다.
+        <div class="formula-box">
+          $$R_{s,t} = \sum_{i \in N_{s,t}} w_{i,t-1} r_{i,t}, \quad w_{i,t-1} = \frac{\text{MCap}_{i,t-1}}{\sum_{j \in N_{s,t}} \text{MCap}_{j,t-1}}$$
+          $$\sigma_s = \text{std}(R_{s,t}) \times \sqrt{252} \times 100\ (\%)$$
+        </div>
+      </div>
+
+      <div class="def-box">
+        <strong>② 업종 부채비율: (a) 종목 중앙값(주 기준) vs (b) 시총가중(비교용)</strong>
+        원시 CSV에 부채·자본 절대액 컬럼이 부재하여 <code>(c) 업종 부채 합 ÷ 자본 합</code>은 산출 불가하므로, 미래 참조 편향 방지를 위해 <b>전일($t-1$) 부채비율</b>을 기준으로 두 방식을 병행한다.
+        <div class="formula-box">
+          • <b>(a) 주 기준:</b> $\text{Debt}^{(a)}_{s,t-1} = \text{Median}_{i \in N_{s,t}}(\text{Debt}_{i,t-1})$<br/>
+          • <b>(b) 비교용:</b> $\text{Debt}^{(b)}_{s,t-1} = \sum_{i \in N_{s,t}} w_{i,t-1} \text{Debt}_{i,t-1}$
+        </div>
+        • 자본잠식 근접 기업의 수천 % 극단치 왜곡을 막기 위해 <b>(a) 종목 중앙값</b>을 주 기준으로 채택한다.
+      </div>
+
+      <div class="def-box">
+        <strong>③ 시장 급락 구간: (a) 일 단위 하위 5%(주 기준) vs (b) -10% 조정 구간</strong>
+        분할 보정된 전 종목 시총가중 시장 일별 수익률($R_{m,t}$)과 누적 지수($I_t$)를 기준으로 급락 국면을 이중 정의한다.
+        <div class="formula-box">
+          • <b>(a) 일 단위(주 기준):</b> $R_{m,t} \le Q_{0.05}(R_m) = -3.72\%$ (29거래일)<br/>
+          • <b>(b) 구간 단위(비교용):</b> $\text{DD}_t = \frac{I_t - \max_{u \le t} I_u}{\max_{u \le t} I_u} \le -10.0\%$ (136거래일, 13개 연속 구간)
+        </div>
+      </div>
+    </div>
+
+    <table class="excl-table">
+      <tr>
+        <th>제외 기준 ①: 금융업 제외 (7개)</th>
+        <td>고객 예탁금·보험준비금 등이 영업 부채로 계상되어 비금융업과 자본구조가 이질적이므로 제외: <b>기타금융, 생명보험, 손해보험, 은행, 증권, 창업투자, 카드</b></td>
+      </tr>
+      <tr>
+        <th>제외 기준 ②: 유효 종목 3개 미만 (6개)</th>
+        <td>단일·소수 기업 특이점에 의한 업종 착시 방지를 위해 유효 종목 3개 미만 업종 제외: <b>다각화된통신서비스(2종목), 다각화된소비자서비스(1종목), 담배(1종목), 문구류(1종목), 복합유틸리티(1종목), 사무용전자제품(1종목)</b></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 2. 인터랙티브 컨트롤 및 요약 -->
+  <div class="controls">
+    <div class="ctrl-group">
+      <label>1. 강조할 업종 선택</label>
+      <select id="sel-sector">
+        <option value="ALL">전체 비금융 업종 종합 (65개 업종)</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>2. X축 부채비율 기준 &amp; 스케일</label>
+      <select id="sel-x">
+        <option value="debt_med_log">(a) 부채비율 중앙값 — 로그 축 (권장)</option>
+        <option value="debt_med_lin">(a) 부채비율 중앙값 — 선형 축</option>
+        <option value="debt_vw_log">(b) 전일 시총가중 부채비율 — 로그 축</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>3. Y축 변동성 지표 선택 (산점도)</label>
+      <select id="sel-metric">
+        <option value="vol">전체 기간 연율화 변동성 (%)</option>
+        <option value="crash_a">(a) 일 단위 급락일(하위 5%) 절대변동 (%)</option>
+        <option value="crash_b">(b) 구간 단위 조정(-10% DD) 절대변동 (%)</option>
+        <option value="down_vol">하방 연율화 변동성 (%)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="verdict-box">
+    <div class="verdict-title">실증 분석 핵심 결론 및 선택 업종 진단</div>
+    <div class="verdict-text" id="verdict-text"></div>
+  </div>
+
+  <!-- 3. 핵심 시각화 (산점도 + 분위별 국면 비교 + 박스플롯 + 교란변수 보조 히트맵) -->
+  <div class="charts-grid">
+    <div class="card"><div id="chart-scatter" style="height:420px;"></div></div>
+    <div class="card"><div id="chart-regime" style="height:420px;"></div></div>
+    <div class="card"><div id="chart-box" style="height:400px;"></div></div>
+    <div class="card"><div id="chart-heatmap" style="height:400px;"></div></div>
+  </div>
+
+  <!-- 4. 임계값 민감도 검증 표 -->
+  <div class="section-card">
+    <h2>2. 급락 기준 임계값 변화에 따른 강건성(Robustness) 점검표</h2>
+    <table class="sens-table" id="sens-table">
+      <thead>
+        <tr>
+          <th>시장 급락 구간 판별 기준</th>
+          <th>고부채 업종군(상위 30%) 일일 절대변동</th>
+          <th>저부채 업종군(하위 30%) 일일 절대변동</th>
+          <th>흔들림 격차 (고부채 - 저부채)</th>
+          <th>고부채 평균 수익률</th>
+          <th>저부채 평균 수익률</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const DATA = {"start": "2024-04-15", "end": "2026-09-02", "n_days": 576, "n_stocks_total": 2450, "n_split_adj": 834, "crash_thresh_5": -3.72, "crash_a_days": 29, "crash_b_days": 136, "rho_a": 0.063, "p_rho_a": 0.6172, "r_a": 0.007, "p_r_a": 0.9573, "partial_rho": -0.098, "p_partial": 0.4387, "rho_ca": 0.035, "p_ca": 0.78, "rho_cb": -0.05, "p_cb": 0.695, "comp": [{"업종그룹": "고부채 업종군 (상위 30%, >=89.0%)", "업종수": 20, "부채중앙값(%)": 139.224, "연율화변동성(%)": 36.77073861487921, "보통일_변동(a,%)": 1.4234220992966136, "급락일_변동(a,%)": 3.810588971890578, "급락일_수익률(a,%)": -3.3029370149891344, "조정구간_변동(b,%)": 2.0239656319719415, "조정구간_수익률(b,%)": -0.17871308238308153}, {"업종그룹": "중부채 업종군 (중간 40%)", "업종수": 25, "부채중앙값(%)": 69.3247, "연율화변동성(%)": 38.42688984158929, "보통일_변동(a,%)": 1.4778671201785682, "급락일_변동(a,%)": 4.012174897737252, "급락일_수익률(a,%)": -3.4997744073906527, "조정구간_변동(b,%)": 2.1770823120581273, "조정구간_수익률(b,%)": -0.14901309415262504}, {"업종그룹": "저부채 업종군 (하위 30%, <=55.7%)", "업종수": 20, "부채중앙값(%)": 41.873, "연율화변동성(%)": 36.585824716815864, "보통일_변동(a,%)": 1.4403406253062774, "급락일_변동(a,%)": 3.7638630515487987, "급락일_수익률(a,%)": -3.348619977529353, "조정구간_변동(b,%)": 2.163942602616019, "조정구간_수익률(b,%)": -0.08961018619111105}], "sens": [{"label": "일 단위 하위 5% (mkt_ret <= -3.72%)", "h_abs": 3.81, "l_abs": 3.76, "diff_abs": 0.05, "h_ret": -3.3, "l_ret": -3.35}, {"label": "일 단위 하위 10% (mkt_ret <= -1.75%)", "h_abs": 2.93, "l_abs": 2.91, "diff_abs": 0.02, "h_ret": -2.43, "l_ret": -2.39}, {"label": "일 단위 절대 기준 (mkt_ret <= -2.00%)", "h_abs": 3.07, "l_abs": 3.05, "diff_abs": 0.02, "h_ret": -2.66, "l_ret": -2.59}, {"label": "구간 단위 조정 (고점 대비 -10% 이상 DD)", "h_abs": 2.02, "l_abs": 2.16, "diff_abs": -0.14, "h_ret": -0.18, "l_ret": -0.09}], "sectors": [{"sector": "항공사", "n_stocks": 6, "debt_med": 475.84, "debt_vw": 277.05, "vol": 37.59, "down_vol": 26.78, "norm_a": 1.478, "crash_a": 3.757, "ret_a": -2.652, "crash_b": 1.961, "ret_b": -0.262, "group": "고부채(상위30%)"}, {"sector": "도로와철도운송", "n_stocks": 8, "debt_med": 234.36, "debt_vw": 295.63, "vol": 26.19, "down_vol": 19.64, "norm_a": 0.991, "crash_a": 2.33, "ret_a": -1.821, "crash_b": 1.33, "ret_b": 0.11, "group": "고부채(상위30%)"}, {"sector": "무역회사와판매업체", "n_stocks": 7, "debt_med": 166.62, "debt_vw": 145.61, "vol": 45.46, "down_vol": 30.41, "norm_a": 1.871, "crash_a": 3.305, "ret_a": -2.482, "crash_b": 2.315, "ret_b": -0.135, "group": "고부채(상위30%)"}, {"sector": "백화점과일반상점", "n_stocks": 12, "debt_med": 135.84, "debt_vw": 145.98, "vol": 31.94, "down_vol": 23.49, "norm_a": 1.241, "crash_a": 3.523, "ret_a": -2.952, "crash_b": 1.836, "ret_b": -0.359, "group": "고부채(상위30%)"}, {"sector": "항공화물운송과물류", "n_stocks": 11, "debt_med": 133.84, "debt_vw": 100.68, "vol": 40.32, "down_vol": 28.37, "norm_a": 1.628, "crash_a": 3.717, "ret_a": -3.524, "crash_b": 1.972, "ret_b": -0.28, "group": "고부채(상위30%)"}, {"sector": "자동차", "n_stocks": 9, "debt_med": 132.78, "debt_vw": 130.39, "vol": 45.53, "down_vol": 32.93, "norm_a": 1.717, "crash_a": 5.005, "ret_a": -4.989, "crash_b": 2.257, "ret_b": -0.465, "group": "고부채(상위30%)"}, {"sector": "무선통신서비스", "n_stocks": 4, "debt_med": 130.38, "debt_vw": 134.66, "vol": 31.37, "down_vol": 23.77, "norm_a": 1.067, "crash_a": 2.745, "ret_a": -2.207, "crash_b": 1.678, "ret_b": 0.018, "group": "고부채(상위30%)"}, {"sector": "건설", "n_stocks": 65, "debt_med": 129.5, "debt_vw": 178.17, "vol": 43.27, "down_vol": 31.06, "norm_a": 1.561, "crash_a": 5.202, "ret_a": -4.73, "crash_b": 2.506, "ret_b": -0.094, "group": "고부채(상위30%)"}, {"sector": "가스유틸리티", "n_stocks": 12, "debt_med": 126.57, "debt_vw": 282.75, "vol": 34.12, "down_vol": 24.35, "norm_a": 1.376, "crash_a": 2.239, "ret_a": -1.47, "crash_b": 1.557, "ret_b": -0.068, "group": "고부채(상위30%)"}, {"sector": "석유와가스", "n_stocks": 13, "debt_med": 119.84, "debt_vw": 155.47, "vol": 40.08, "down_vol": 30.41, "norm_a": 1.54, "crash_a": 4.565, "ret_a": -4.285, "crash_b": 2.357, "ret_b": -0.387, "group": "고부채(상위30%)"}, {"sector": "자동차부품", "n_stocks": 145, "debt_med": 114.09, "debt_vw": 85.94, "vol": 35.67, "down_vol": 27.71, "norm_a": 1.277, "crash_a": 4.217, "ret_a": -3.985, "crash_b": 1.954, "ret_b": -0.327, "group": "고부채(상위30%)"}, {"sector": "복합기업", "n_stocks": 13, "debt_med": 106.65, "debt_vw": 108.15, "vol": 42.91, "down_vol": 32.34, "norm_a": 1.546, "crash_a": 5.856, "ret_a": -5.856, "crash_b": 2.29, "ret_b": -0.408, "group": "고부채(상위30%)"}, {"sector": "음료", "n_stocks": 12, "debt_med": 105.08, "debt_vw": 162.8, "vol": 18.69, "down_vol": 13.62, "norm_a": 0.78, "crash_a": 1.646, "ret_a": -1.211, "crash_b": 1.085, "ret_b": -0.122, "group": "고부채(상위30%)"}, {"sector": "전기장비", "n_stocks": 30, "debt_med": 102.41, "debt_vw": 149.84, "vol": 59.42, "down_vol": 39.48, "norm_a": 2.448, "crash_a": 6.815, "ret_a": -6.579, "crash_b": 3.387, "ret_b": -0.279, "group": "고부채(상위30%)"}, {"sector": "에너지장비및서비스", "n_stocks": 28, "debt_med": 100.02, "debt_vw": 172.46, "vol": 54.35, "down_vol": 38.89, "norm_a": 2.101, "crash_a": 5.529, "ret_a": -5.053, "crash_b": 3.317, "ret_b": -0.017, "group": "고부채(상위30%)"}, {"sector": "부동산", "n_stocks": 6, "debt_med": 99.69, "debt_vw": 103.92, "vol": 20.86, "down_vol": 16.62, "norm_a": 0.78, "crash_a": 2.059, "ret_a": -1.418, "crash_b": 1.22, "ret_b": -0.144, "group": "고부채(상위30%)"}, {"sector": "광고", "n_stocks": 16, "debt_med": 97.89, "debt_vw": 127.57, "vol": 19.07, "down_vol": 16.88, "norm_a": 0.723, "crash_a": 1.923, "ret_a": -1.423, "crash_b": 1.108, "ret_b": -0.116, "group": "고부채(상위30%)"}, {"sector": "호텔,레스토랑,레저", "n_stocks": 19, "debt_med": 92.17, "debt_vw": 126.8, "vol": 24.9, "down_vol": 20.26, "norm_a": 0.978, "crash_a": 2.752, "ret_a": -2.056, "crash_b": 1.42, "ret_b": -0.178, "group": "고부채(상위30%)"}, {"sector": "우주항공과국방", "n_stocks": 26, "debt_med": 91.61, "debt_vw": 262.68, "vol": 53.05, "down_vol": 34.34, "norm_a": 2.268, "crash_a": 5.004, "ret_a": -3.398, "crash_b": 3.049, "ret_b": 0.1, "group": "고부채(상위30%)"}, {"sector": "건축자재", "n_stocks": 42, "debt_med": 89.31, "debt_vw": 102.09, "vol": 30.62, "down_vol": 25.23, "norm_a": 1.1, "crash_a": 4.023, "ret_a": -3.967, "crash_b": 1.88, "ret_b": -0.16, "group": "고부채(상위30%)"}, {"sector": "디스플레이패널", "n_stocks": 6, "debt_med": 88.03, "debt_vw": 257.33, "vol": 48.44, "down_vol": 33.91, "norm_a": 1.84, "crash_a": 4.837, "ret_a": -4.63, "crash_b": 2.233, "ret_b": -0.525, "group": "중부채(중간40%)"}, {"sector": "식품", "n_stocks": 78, "debt_med": 86.53, "debt_vw": 88.34, "vol": 24.17, "down_vol": 16.58, "norm_a": 1.012, "crash_a": 2.223, "ret_a": -1.577, "crash_b": 1.361, "ret_b": 0.065, "group": "중부채(중간40%)"}, {"sector": "인터넷과카탈로그소매", "n_stocks": 7, "debt_med": 86.45, "debt_vw": 77.23, "vol": 52.78, "down_vol": 39.74, "norm_a": 2.181, "crash_a": 3.837, "ret_a": -2.957, "crash_b": 2.896, "ret_b": 0.335, "group": "중부채(중간40%)"}, {"sector": "종이와목재", "n_stocks": 12, "debt_med": 85.1, "debt_vw": 90.5, "vol": 22.25, "down_vol": 20.73, "norm_a": 0.691, "crash_a": 2.102, "ret_a": -1.812, "crash_b": 0.964, "ret_b": -0.054, "group": "중부채(중간40%)"}, {"sector": "해운사", "n_stocks": 11, "debt_med": 82.01, "debt_vw": 38.39, "vol": 39.68, "down_vol": 27.34, "norm_a": 1.525, "crash_a": 3.429, "ret_a": -1.7, "crash_b": 2.002, "ret_b": 0.088, "group": "중부채(중간40%)"}, {"sector": "식품과기본식료품소매", "n_stocks": 6, "debt_med": 81.95, "debt_vw": 160.98, "vol": 27.29, "down_vol": 19.71, "norm_a": 1.151, "crash_a": 2.232, "ret_a": -1.819, "crash_b": 1.577, "ret_b": -0.024, "group": "중부채(중간40%)"}, {"sector": "전자제품", "n_stocks": 15, "debt_med": 81.05, "debt_vw": 147.93, "vol": 55.7, "down_vol": 40.58, "norm_a": 1.869, "crash_a": 5.993, "ret_a": -4.795, "crash_b": 2.675, "ret_b": -0.423, "group": "중부채(중간40%)"}, {"sector": "조선", "n_stocks": 28, "debt_med": 73.06, "debt_vw": 199.22, "vol": 46.48, "down_vol": 32.4, "norm_a": 1.922, "crash_a": 5.012, "ret_a": -4.44, "crash_b": 2.721, "ret_b": 0.055, "group": "중부채(중간40%)"}, {"sector": "가구", "n_stocks": 11, "debt_med": 68.86, "debt_vw": 101.75, "vol": 25.08, "down_vol": 18.7, "norm_a": 1.055, "crash_a": 2.528, "ret_a": -1.815, "crash_b": 1.434, "ret_b": -0.155, "group": "중부채(중간40%)"}, {"sector": "전자장비와기기", "n_stocks": 93, "debt_med": 68.54, "debt_vw": 76.36, "vol": 54.37, "down_vol": 42.27, "norm_a": 1.8, "crash_a": 6.841, "ret_a": -6.641, "crash_b": 3.387, "ret_b": -0.456, "group": "중부채(중간40%)"}, {"sector": "비철금속", "n_stocks": 38, "debt_med": 67.26, "debt_vw": 84.58, "vol": 63.92, "down_vol": 45.23, "norm_a": 2.358, "crash_a": 5.045, "ret_a": -4.039, "crash_b": 3.429, "ret_b": -0.255, "group": "중부채(중간40%)"}, {"sector": "IT서비스", "n_stocks": 103, "debt_med": 66.38, "debt_vw": 79.26, "vol": 40.31, "down_vol": 31.37, "norm_a": 1.506, "crash_a": 4.721, "ret_a": -4.597, "crash_b": 2.202, "ret_b": -0.171, "group": "중부채(중간40%)"}, {"sector": "가정용기기와용품", "n_stocks": 18, "debt_med": 66.33, "debt_vw": 88.71, "vol": 28.35, "down_vol": 20.98, "norm_a": 1.176, "crash_a": 2.952, "ret_a": -2.431, "crash_b": 1.681, "ret_b": 0.085, "group": "중부채(중간40%)"}, {"sector": "핸드셋", "n_stocks": 57, "debt_med": 65.83, "debt_vw": 81.08, "vol": 35.77, "down_vol": 29.45, "norm_a": 1.335, "crash_a": 5.089, "ret_a": -4.885, "crash_b": 2.498, "ret_b": -0.236, "group": "중부채(중간40%)"}, {"sector": "전기제품", "n_stocks": 62, "debt_med": 65.65, "debt_vw": 107.88, "vol": 51.22, "down_vol": 32.8, "norm_a": 2.127, "crash_a": 4.765, "ret_a": -4.615, "crash_b": 2.781, "ret_b": -0.312, "group": "중부채(중간40%)"}, {"sector": "교육서비스", "n_stocks": 22, "debt_med": 63.97, "debt_vw": 91.31, "vol": 20.24, "down_vol": 16.67, "norm_a": 0.786, "crash_a": 1.945, "ret_a": -1.759, "crash_b": 1.34, "ret_b": -0.013, "group": "중부채(중간40%)"}, {"sector": "철강", "n_stocks": 53, "debt_med": 63.48, "debt_vw": 71.67, "vol": 37.85, "down_vol": 26.59, "norm_a": 1.556, "crash_a": 3.844, "ret_a": -3.8, "crash_b": 2.049, "ret_b": -0.371, "group": "중부채(중간40%)"}, {"sector": "양방향미디어와서비스", "n_stocks": 15, "debt_med": 62.99, "debt_vw": 58.11, "vol": 39.92, "down_vol": 28.57, "norm_a": 1.58, "crash_a": 4.072, "ret_a": -3.585, "crash_b": 2.149, "ret_b": -0.029, "group": "중부채(중간40%)"}, {"sector": "화학", "n_stocks": 114, "debt_med": 60.61, "debt_vw": 105.97, "vol": 42.69, "down_vol": 30.67, "norm_a": 1.734, "crash_a": 4.905, "ret_a": -4.836, "crash_b": 2.488, "ret_b": -0.471, "group": "중부채(중간40%)"}, {"sector": "디스플레이장비및부품", "n_stocks": 64, "debt_med": 60.43, "debt_vw": 95.64, "vol": 36.3, "down_vol": 29.64, "norm_a": 1.316, "crash_a": 4.915, "ret_a": -4.831, "crash_b": 2.327, "ret_b": -0.154, "group": "중부채(중간40%)"}, {"sector": "레저용장비와제품", "n_stocks": 11, "debt_med": 58.66, "debt_vw": 85.92, "vol": 30.0, "down_vol": 23.51, "norm_a": 1.154, "crash_a": 2.795, "ret_a": -2.486, "crash_b": 1.676, "ret_b": -0.134, "group": "중부채(중간40%)"}, {"sector": "섬유,의류,신발,호화품", "n_stocks": 76, "debt_med": 58.42, "debt_vw": 68.22, "vol": 24.47, "down_vol": 20.02, "norm_a": 0.931, "crash_a": 2.811, "ret_a": -1.65, "crash_b": 1.38, "ret_b": -0.11, "group": "중부채(중간40%)"}, {"sector": "통신장비", "n_stocks": 50, "debt_med": 58.33, "debt_vw": 92.5, "vol": 48.25, "down_vol": 35.03, "norm_a": 1.772, "crash_a": 6.207, "ret_a": -5.885, "crash_b": 3.219, "ret_b": -0.109, "group": "중부채(중간40%)"}, {"sector": "방송과엔터테인먼트", "n_stocks": 54, "debt_med": 56.67, "debt_vw": 80.74, "vol": 34.93, "down_vol": 28.57, "norm_a": 1.362, "crash_a": 3.926, "ret_a": -3.154, "crash_b": 2.095, "ret_b": -0.161, "group": "중부채(중간40%)"}, {"sector": "제약", "n_stocks": 152, "debt_med": 56.55, "debt_vw": 48.85, "vol": 30.19, "down_vol": 22.0, "norm_a": 1.207, "crash_a": 3.278, "ret_a": -2.756, "crash_b": 1.863, "ret_b": -0.191, "group": "중부채(중간40%)"}, {"sector": "상업서비스와공급품", "n_stocks": 29, "debt_med": 55.47, "debt_vw": 70.6, "vol": 19.47, "down_vol": 14.79, "norm_a": 0.773, "crash_a": 1.919, "ret_a": -1.728, "crash_b": 1.058, "ret_b": -0.038, "group": "저부채(하위30%)"}, {"sector": "기계", "n_stocks": 97, "debt_med": 55.08, "debt_vw": 91.32, "vol": 45.45, "down_vol": 32.98, "norm_a": 1.767, "crash_a": 5.702, "ret_a": -5.517, "crash_b": 2.75, "ret_b": -0.112, "group": "저부채(하위30%)"}, {"sector": "건강관리업체및서비스", "n_stocks": 26, "debt_med": 53.58, "debt_vw": 78.6, "vol": 45.66, "down_vol": 33.53, "norm_a": 1.7, "crash_a": 5.039, "ret_a": -4.104, "crash_b": 2.672, "ret_b": -0.359, "group": "저부채(하위30%)"}, {"sector": "반도체와반도체장비", "n_stocks": 162, "debt_med": 51.51, "debt_vw": 38.24, "vol": 55.85, "down_vol": 42.57, "norm_a": 1.98, "crash_a": 8.277, "ret_a": -8.277, "crash_b": 3.456, "ret_b": -0.468, "group": "저부채(하위30%)"}, {"sector": "건축제품", "n_stocks": 10, "debt_med": 50.46, "debt_vw": 66.03, "vol": 27.82, "down_vol": 21.89, "norm_a": 1.052, "crash_a": 2.891, "ret_a": -2.757, "crash_b": 1.583, "ret_b": -0.177, "group": "저부채(하위30%)"}, {"sector": "전기유틸리티", "n_stocks": 5, "debt_med": 49.49, "debt_vw": 386.01, "vol": 43.48, "down_vol": 31.32, "norm_a": 1.709, "crash_a": 3.906, "ret_a": -3.801, "crash_b": 2.039, "ret_b": -0.312, "group": "저부채(하위30%)"}, {"sector": "판매업체", "n_stocks": 12, "debt_med": 46.09, "debt_vw": 43.65, "vol": 41.46, "down_vol": 26.71, "norm_a": 1.695, "crash_a": 3.399, "ret_a": -2.987, "crash_b": 2.513, "ret_b": 0.289, "group": "저부채(하위30%)"}, {"sector": "화장품", "n_stocks": 56, "debt_med": 45.36, "debt_vw": 60.69, "vol": 35.06, "down_vol": 24.55, "norm_a": 1.426, "crash_a": 3.52, "ret_a": -2.273, "crash_b": 2.077, "ret_b": -0.045, "group": "저부채(하위30%)"}, {"sector": "건강관리장비와용품", "n_stocks": 82, "debt_med": 44.94, "debt_vw": 45.63, "vol": 37.37, "down_vol": 28.56, "norm_a": 1.445, "crash_a": 4.081, "ret_a": -3.473, "crash_b": 2.202, "ret_b": -0.133, "group": "저부채(하위30%)"}, {"sector": "컴퓨터와주변기기", "n_stocks": 21, "debt_med": 44.82, "debt_vw": 55.36, "vol": 30.21, "down_vol": 23.65, "norm_a": 1.132, "crash_a": 2.947, "ret_a": -2.81, "crash_b": 1.931, "ret_b": 0.104, "group": "저부채(하위30%)"}, {"sector": "생물공학", "n_stocks": 47, "debt_med": 41.39, "debt_vw": 61.97, "vol": 51.33, "down_vol": 35.15, "norm_a": 2.147, "crash_a": 5.265, "ret_a": -4.371, "crash_b": 3.252, "ret_b": -0.255, "group": "저부채(하위30%)"}, {"sector": "포장재", "n_stocks": 25, "debt_med": 39.6, "debt_vw": 66.98, "vol": 26.85, "down_vol": 20.56, "norm_a": 1.103, "crash_a": 2.78, "ret_a": -2.359, "crash_b": 1.631, "ret_b": -0.066, "group": "저부채(하위30%)"}, {"sector": "생명과학도구및서비스", "n_stocks": 36, "debt_med": 38.21, "debt_vw": 52.57, "vol": 42.03, "down_vol": 30.12, "norm_a": 1.636, "crash_a": 4.73, "ret_a": -4.167, "crash_b": 2.726, "ret_b": -0.188, "group": "저부채(하위30%)"}, {"sector": "게임엔터테인먼트", "n_stocks": 33, "debt_med": 36.92, "debt_vw": 37.29, "vol": 31.59, "down_vol": 25.12, "norm_a": 1.287, "crash_a": 2.912, "ret_a": -2.437, "crash_b": 1.907, "ret_b": -0.117, "group": "저부채(하위30%)"}, {"sector": "건강관리기술", "n_stocks": 11, "debt_med": 36.67, "debt_vw": 88.73, "vol": 48.95, "down_vol": 31.83, "norm_a": 2.025, "crash_a": 4.298, "ret_a": -3.851, "crash_b": 3.11, "ret_b": 0.045, "group": "저부채(하위30%)"}, {"sector": "운송인프라", "n_stocks": 6, "debt_med": 34.64, "debt_vw": 39.99, "vol": 27.22, "down_vol": 18.97, "norm_a": 1.121, "crash_a": 2.752, "ret_a": -2.722, "crash_b": 1.666, "ret_b": -0.107, "group": "저부채(하위30%)"}, {"sector": "출판", "n_stocks": 8, "debt_med": 31.41, "debt_vw": 107.94, "vol": 34.26, "down_vol": 26.44, "norm_a": 1.369, "crash_a": 3.225, "ret_a": -3.006, "crash_b": 1.811, "ret_b": 0.001, "group": "저부채(하위30%)"}, {"sector": "소프트웨어", "n_stocks": 69, "debt_med": 31.17, "debt_vw": 58.36, "vol": 31.01, "down_vol": 22.31, "norm_a": 1.25, "crash_a": 3.158, "ret_a": -2.978, "crash_b": 1.901, "ret_b": 0.063, "group": "저부채(하위30%)"}, {"sector": "전문소매", "n_stocks": 4, "debt_med": 30.24, "debt_vw": 81.16, "vol": 34.07, "down_vol": 24.07, "norm_a": 1.332, "crash_a": 2.236, "ret_a": -1.64, "crash_b": 1.668, "ret_b": 0.023, "group": "저부채(하위30%)"}, {"sector": "가정용품", "n_stocks": 9, "debt_med": 20.41, "debt_vw": 42.91, "vol": 22.59, "down_vol": 18.01, "norm_a": 0.857, "crash_a": 2.241, "ret_a": -1.713, "crash_b": 1.327, "ret_b": 0.06, "group": "저부채(하위30%)"}], "corr_labels": ["부채비율(중앙값)", "연율화변동성", "급락일변동성", "로그시가총액", "영업이익률", "ROE", "PBR"], "corr_mat": [[1.0, 0.063, 0.035, 0.428, 0.374, 0.12, -0.385], [0.063, 1.0, 0.891, 0.341, -0.195, -0.244, 0.35], [0.035, 0.891, 1.0, 0.2, -0.205, -0.17, 0.336], [0.428, 0.341, 0.2, 1.0, 0.392, 0.01, 0.164], [0.374, -0.195, -0.205, 0.392, 1.0, 0.474, 0.04], [0.12, -0.244, -0.17, 0.01, 0.474, 1.0, 0.105], [-0.385, 0.35, 0.336, 0.164, 0.04, 0.105, 1.0]], "excluded": {"fin": ["기타금융", "생명보험", "손해보험", "은행", "증권", "창업투자", "카드"], "small": ["다각화된통신서비스(2종목)", "다각화된소비자서비스(1종목)", "담배(1종목)", "문구류(1종목)", "복합유틸리티(1종목)", "사무용전자제품(1종목)"]}};
+
+const selSec = document.getElementById('sel-sector');
+DATA.sectors.forEach(s => {
+  const o = document.createElement('option'); o.value = s.sector;
+  o.textContent = `${s.sector} (부채 중앙값 ${s.debt_med}%, 연율화변동성 ${s.vol}%, ${s.group})`;
+  selSec.appendChild(o);
+});
+
+const tbody = document.querySelector('#sens-table tbody');
+DATA.sens.forEach(r => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="text-align:left; font-weight:600;">${r.label}</td>
+    <td>${r.h_abs.toFixed(2)}%</td>
+    <td>${r.l_abs.toFixed(2)}%</td>
+    <td style="font-weight:700; color:${r.diff_abs >= 0 ? '#dc2626' : '#2563eb'};">${r.diff_abs >= 0 ? '+' : ''}${r.diff_abs.toFixed(2)}%p</td>
+    <td>${r.h_ret >= 0 ? '+' : ''}${r.h_ret.toFixed(2)}%</td>
+    <td>${r.l_ret >= 0 ? '+' : ''}${r.l_ret.toFixed(2)}%</td>
+  `;
+  tbody.appendChild(tr);
+});
+
+function update() {
+  const secVal = selSec.value;
+  const xMode = document.getElementById('sel-x').value;
+  const metric = document.getElementById('sel-metric').value;
+
+  const debtKey = xMode.startsWith('debt_med') ? 'debt_med' : 'debt_vw';
+  const isLog = xMode.endsWith('log');
+
+  if (secVal === 'ALL') {
+    document.getElementById('verdict-text').textContent =
+      `비금융 ${DATA.sectors.length}개 업종 분석 결과, 부채비율 중앙값(a)과 연율화 변동성의 스피어만 순위상관은 rho = ${DATA.rho_a >= 0 ? '+' : ''}${DATA.rho_a}(p=${DATA.p_rho_a}), 피어슨 상관은 r = ${DATA.r_a >= 0 ? '+' : ''}${DATA.r_a}(p=${DATA.p_r_a})이며, 시가총액 규모를 통제한 부분상관 역시 partial rho = ${DATA.partial_rho >= 0 ? '+' : ''}${DATA.partial_rho}(p=${DATA.p_partial})로 통계적으로 유의미한 양(+)의 관계가 나타나지 않았습니다.`;
+  } else {
+    const cur = DATA.sectors.find(s => s.sector === secVal);
+    document.getElementById('verdict-text').textContent =
+      `[${cur.sector}] 업종(${cur.group}, ${cur.n_stocks}종목)의 부채비율 중앙값(a)은 ${cur.debt_med}%(시총가중 ${cur.debt_vw}%), 전체 기간 연율화 변동성은 ${cur.vol}%입니다. 보통일 일일 절대변동 ${cur.norm_a}% 대비 (a) 급락일(하위 5%)에는 ${cur.crash_a}%(평균수익률 ${cur.ret_a}%), (b) -10% 조정구간에는 ${cur.crash_b}%(평균수익률 ${cur.ret_b}%)를 기록했습니다.`;
+  }
+
+  const colors = { '고부채(상위30%)': '#dc2626', '중부채(중간40%)': '#64748b', '저부채(하위30%)': '#2563eb' };
+  const labelTargets = new Set(['항공사', '도로와철도운송', '건설', '자동차', '생물공학', '건강관리기술', '가정용품', '소프트웨어', '반도체와반도체장비', secVal]);
+
+  const traces = ['고부채(상위30%)', '중부채(중간40%)', '저부채(하위30%)'].map(g => {
+    const sub = DATA.sectors.filter(s => s.group === g);
+    return {
+      x: sub.map(s => s[debtKey]),
+      y: sub.map(s => s[metric]),
+      text: sub.map(s => labelTargets.has(s.sector) ? s.sector : ''),
+      hovertext: sub.map(s => `${s.sector} | 부채: ${s[debtKey]}% | 지표: ${s[metric]}%`),
+      hoverinfo: 'text',
+      mode: 'markers+text',
+      type: 'scatter',
+      name: g,
+      textposition: 'top center',
+      textfont: { size: 10.5 },
+      marker: {
+        size: sub.map(s => s.sector === secVal ? 18 : 10),
+        color: colors[g],
+        line: { width: sub.map(s => s.sector === secVal ? 3 : 1), color: '#0f172a' }
+      }
+    };
+  });
+
+  const xTitle = debtKey === 'debt_med' ? '(a) 업종 부채비율 중앙값 (%)' : '(b) 업종 시총가중 부채비율 (%)';
+  const yTitleMap = {
+    'vol': '전체 기간 연율화 변동성 (%)',
+    'crash_a': '(a) 일 단위 급락일(하위 5%) 절대변동 (%)',
+    'crash_b': '(b) 구간 단위 조정(-10% DD) 절대변동 (%)',
+    'down_vol': '하방 연율화 변동성 (%)'
+  };
+
+  Plotly.newPlot('chart-scatter', traces, {
+    title: `1. 업종별 부채비율(X) vs 수익률 변동성(Y) (Spearman rho = ${DATA.rho_a})`,
+    xaxis: { title: xTitle, type: isLog ? 'log' : 'linear' },
+    yaxis: { title: yTitleMap[metric] },
+    margin: { t: 45, l: 55, r: 20, b: 45 },
+    legend: { orientation: 'h', y: -0.22 }
+  }, { responsive: true });
+
+  Plotly.newPlot('chart-regime', [
+    { x: DATA.comp.map(c => c['업종그룹']), y: DATA.comp.map(c => c['보통일_변동(a,%)']), type: 'bar', name: '보통일(상위 95%) 변동 (%)', marker: { color: '#94a3b8' } },
+    { x: DATA.comp.map(c => c['업종그룹']), y: DATA.comp.map(c => c['급락일_변동(a,%)']), type: 'bar', name: '(a) 급락일(하위 5%) 변동 (%)', marker: { color: '#dc2626' } },
+    { x: DATA.comp.map(c => c['업종그룹']), y: DATA.comp.map(c => c['조정구간_변동(b,%)']), type: 'bar', name: '(b) 조정구간(-10% DD) 변동 (%)', marker: { color: '#f59e0b' } }
+  ], {
+    title: '2. 부채 3분위별 보통일 vs (a) 일 단위 급락 vs (b) 조정구간 비교',
+    yaxis: { title: '일일 절대수익률 평균 (%)' },
+    barmode: 'group',
+    margin: { t: 45, l: 55, r: 20, b: 45 },
+    legend: { orientation: 'h', y: -0.22 }
+  }, { responsive: true });
+
+  const boxTraces = ['고부채(상위30%)', '중부채(중간40%)', '저부채(하위30%)'].map(g => {
+    const sub = DATA.sectors.filter(s => s.group === g);
+    return {
+      y: sub.map(s => s.crash_a),
+      type: 'box',
+      name: g,
+      boxpoints: 'all',
+      jitter: 0.4,
+      pointpos: -1.6,
+      marker: { color: colors[g], size: 6 }
+    };
+  });
+  Plotly.newPlot('chart-box', boxTraces, {
+    title: '3. 급락일(하위 5%) 일일 변동폭 그룹 내부 분포 (Box Plot)',
+    yaxis: { title: '급락일 일일 절대변동 (%)' },
+    margin: { t: 45, l: 55, r: 20, b: 45 },
+    showlegend: false
+  }, { responsive: true });
+
+  Plotly.newPlot('chart-heatmap', [{
+    z: DATA.corr_mat,
+    x: DATA.corr_labels,
+    y: DATA.corr_labels,
+    type: 'heatmap',
+    colorscale: 'RdBu',
+    reversescale: true,
+    zmin: -1,
+    zmax: 1,
+    text: DATA.corr_mat.map(row => row.map(v => v.toFixed(2))),
+    texttemplate: '%{text}',
+    showscale: true
+  }], {
+    title: '4. 교란 변수 점검용 다변량 스피어만 상관 행렬 (보조 히트맵)',
+    margin: { t: 45, l: 105, r: 20, b: 85 }
+  }, { responsive: true });
+}
+
+['sel-sector', 'sel-x', 'sel-metric'].forEach(id => document.getElementById(id).addEventListener('change', update));
+update();
+</script>
+</body>
+</html>
